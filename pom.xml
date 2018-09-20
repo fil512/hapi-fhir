@@ -6,7 +6,7 @@
 	<groupId>ca.uhn.hapi.fhir</groupId>
 	<artifactId>hapi-fhir</artifactId>
 	<packaging>pom</packaging>
-	<version>3.5.0</version>
+	<version>3.6.0-SNAPSHOT</version>
 	<name>HAPI-FHIR</name>
 	<description>An open-source implementation of the FHIR specification in Java.</description>
 	<url>https://hapifhir.io</url>
@@ -498,6 +498,7 @@
 		<aries_spifly_version>1.0.10</aries_spifly_version>
 		<caffeine_version>2.6.2</caffeine_version>
 		<commons_codec_version>1.11</commons_codec_version>
+		<commons_text_version>1.4</commons_text_version>
 		<commons_io_version>2.6</commons_io_version>
 		<commons_lang3_version>3.8</commons_lang3_version>
 		<derby_version>10.14.2.0</derby_version>
@@ -789,7 +790,7 @@
 			<dependency>
 				<groupId>mysql</groupId>
 				<artifactId>mysql-connector-java</artifactId>
-				<version>6.0.4</version>
+				<version>8.0.12</version>
 			</dependency>
 			<dependency>
 				<groupId>net.riotopsys</groupId>
@@ -843,7 +844,7 @@
 			<dependency>
 				<groupId>org.apache.commons</groupId>
 				<artifactId>commons-text</artifactId>
-				<version>1.4</version>
+				<version>${commons_text_version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.apache.derby</groupId>
@@ -1145,7 +1146,7 @@
 			<dependency>
 				<groupId>org.postgresql</groupId>
 				<artifactId>postgresql</artifactId>
-				<version>42.2.2.jre7</version>
+				<version>42.2.5.jre7</version>
 			</dependency>
 			<dependency>
 				<groupId>org.slf4j</groupId>

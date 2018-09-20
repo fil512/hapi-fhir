@@ -1,6 +1,8 @@
 package ca.uhn.fhir.jpa.migrate;
 
 import org.apache.commons.lang3.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.SingleConnectionDataSource;
@@ -8,6 +10,9 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.Nonnull;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.util.Enumeration;
 
 /*-
  * #%L
@@ -41,10 +46,11 @@ public enum DriverTypeEnum {
 
 	ORACLE_12C("oracle.jdbc.OracleDriver", false),
 
-	MSSQL_2012("com.microsoft.sqlserver.jdbc.SQLServerDataSource", false),
+	MSSQL_2012("com.microsoft.sqlserver.jdbc.SQLServerDriver", false),
 
 	;
 
+	private static final Logger ourLog = LoggerFactory.getLogger(DriverTypeEnum.class);
 	private String myDriverClassName;
 	private boolean myDerby;
 
@@ -56,8 +62,8 @@ public enum DriverTypeEnum {
 		myDerby = theDerby;
 	}
 
-
 	public ConnectionProperties newConnectionProperties(String theUrl, String theUsername, String thePassword) {
+
 		SingleConnectionDataSource dataSource = new SingleConnectionDataSource();
 		dataSource.setAutoCommit(false);
 		dataSource.setDriverClassName(myDriverClassName);
@@ -83,6 +89,7 @@ public enum DriverTypeEnum {
 		private final DriverTypeEnum myDriverType;
 		private final SingleConnectionDataSource myDataSource;
 		private final TransactionTemplate myTxTemplate;
+
 		/**
 		 * Constructor
 		 */

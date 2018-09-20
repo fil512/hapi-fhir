@@ -27,27 +27,21 @@ import org.slf4j.LoggerFactory;
 import java.sql.SQLException;
 import java.util.Set;
 
-public class AddColumnTask extends BaseTableColumnTypeTask<AddColumnTask> {
+public class DropColumnTask extends BaseTableColumnTask<DropColumnTask> {
 
-	private static final Logger ourLog = LoggerFactory.getLogger(AddColumnTask.class);
+	private static final Logger ourLog = LoggerFactory.getLogger(DropColumnTask.class);
 
 
 	@Override
 	public void execute() throws SQLException {
 		Set<String> columnNames = JdbcUtils.getColumnNames(getConnectionProperties(), getTableName());
-		if (columnNames.contains(getColumnName())) {
-			ourLog.info("Column {} already exists on table {} - No action performed", getColumnName(), getTableName());
+		if (!columnNames.contains(getColumnName())) {
+			ourLog.info("Column {} does not exist on table {} - No action performed", getColumnName(), getTableName());
 			return;
 		}
 
-		String type = getSqlType();
-		String nullable = getSqlNotNull();
-		if (isNullable()) {
-			nullable = "";
-		}
-
-		String sql = "alter table " + getTableName() + " add column " + getColumnName() + " " + type + " " + nullable;
-		ourLog.info("Adding column {} of type {} to table {}", getColumnName(), type, getTableName());
+		String sql = "alter table " + getTableName() + " drop column " + getColumnName();
+		ourLog.info("Dropping column {} on table {}", getColumnName(), getTableName());
 		executeSql(sql);
 	}
 

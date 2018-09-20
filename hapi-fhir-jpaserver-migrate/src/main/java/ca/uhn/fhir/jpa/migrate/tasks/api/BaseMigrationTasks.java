@@ -22,10 +22,9 @@ package ca.uhn.fhir.jpa.migrate.tasks.api;
 
 import ca.uhn.fhir.jpa.migrate.DriverTypeEnum;
 import ca.uhn.fhir.jpa.migrate.taskdef.*;
-import ca.uhn.fhir.jpa.migrate.tasks.HapiFhirJpaMigrationTasks;
-import ca.uhn.fhir.util.VersionEnum;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
+import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.Validate;
 import org.intellij.lang.annotations.Language;
 
@@ -34,24 +33,25 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public class BaseMigrationTasks {
-	private Multimap<VersionEnum, BaseTask<?>> myTasks = MultimapBuilder.hashKeys().arrayListValues().build();
+public class BaseMigrationTasks<T extends Enum> {
+	private Multimap<T, BaseTask<?>> myTasks = MultimapBuilder.hashKeys().arrayListValues().build();
 
-	public List<BaseTask<?>> getTasks(@Nonnull VersionEnum theFrom, @Nonnull VersionEnum theTo) {
+	@SuppressWarnings("unchecked")
+	public List<BaseTask<?>> getTasks(@Nonnull T theFrom, @Nonnull T theTo) {
 		Validate.notNull(theFrom);
 		Validate.notNull(theTo);
 		Validate.isTrue(theFrom.ordinal() < theTo.ordinal(), "From version must be lower than to version");
 
 		List<BaseTask<?>> retVal = new ArrayList<>();
-		for (VersionEnum nextVersion : VersionEnum.values()) {
-			if (nextVersion.ordinal() <= theFrom.ordinal()) {
+		for (Object nextVersion : EnumUtils.getEnumList(theFrom.getClass())) {
+			if (((T) nextVersion).ordinal() <= theFrom.ordinal()) {
 				continue;
 			}
-			if (nextVersion.ordinal() > theTo.ordinal()) {
+			if (((T) nextVersion).ordinal() > theTo.ordinal()) {
 				continue;
 			}
 
-			Collection<BaseTask<?>> nextValues = myTasks.get(nextVersion);
+			Collection<BaseTask<?>> nextValues = myTasks.get((T) nextVersion);
 			if (nextValues != null) {
 				retVal.addAll(nextValues);
 			}
@@ -60,16 +60,16 @@ public class BaseMigrationTasks {
 		return retVal;
 	}
 
-	protected HapiFhirJpaMigrationTasks.Builder forVersion(VersionEnum theVersion) {
-		return new HapiFhirJpaMigrationTasks.Builder(theVersion);
+	protected Builder forVersion(T theVersion) {
+		return new Builder(theVersion);
 	}
 
 	protected class Builder {
 
-		private final VersionEnum myVersion;
+		private final T myVersion;
 		private String myTableName;
 
-		Builder(VersionEnum theVersion) {
+		Builder(T theVersion) {
 			myVersion = theVersion;
 		}
 
@@ -88,14 +88,16 @@ public class BaseMigrationTasks {
 			return new BuilderAddTable();
 		}
 
-		public void startSectionWithMessage(String theMessage) {
+		public Builder startSectionWithMessage(String theMessage) {
 			Validate.notBlank(theMessage);
 			addTask(new LogStartSectionWithMessageTask(theMessage));
+			return this;
 		}
 
 		public class BuilderWithTableName {
 			private String myIndexName;
 			private String myColumnName;
+			private String myForeignKeyName;
 
 			public String getTableName() {
 				return myTableName;
@@ -118,6 +120,14 @@ public class BaseMigrationTasks {
 				return new BuilderAddColumnWithName();
 			}
 
+			public void dropColumn(String theColumnName) {
+				Validate.notBlank(theColumnName);
+				DropColumnTask task = new DropColumnTask();
+				task.setTableName(myTableName);
+				task.setColumnName(theColumnName);
+				addTask(task);
+			}
+
 			public void addTask(BaseTableTask<?> theTask) {
 				theTask.setTableName(myTableName);
 				Builder.this.addTask(theTask);
@@ -126,6 +136,11 @@ public class BaseMigrationTasks {
 			public BuilderModifyColumnWithName modifyColumn(String theColumnName) {
 				myColumnName = theColumnName;
 				return new BuilderModifyColumnWithName();
+			}
+
+			public BuilderAddForeignKey addForeignKey(String theForeignKeyName) {
+				myForeignKeyName = theForeignKeyName;
+				return new BuilderAddForeignKey();
 			}
 
 			public class BuilderAddIndexWithName {
@@ -158,10 +173,17 @@ public class BaseMigrationTasks {
 
 				public class BuilderAddColumnWithNameNullable {
 					public void type(AddColumnTask.ColumnTypeEnum theColumnType) {
+						type(theColumnType, null);
+					}
+
+					public void type(AddColumnTask.ColumnTypeEnum theColumnType, Integer theLength) {
 						AddColumnTask task = new AddColumnTask();
 						task.setColumnName(myColumnName);
 						task.setNullable(myNullable);
 						task.setColumnType(theColumnType);
+						if (theLength != null) {
+							task.setColumnLength(theLength);
+						}
 						addTask(task);
 					}
 				}
@@ -183,20 +205,52 @@ public class BaseMigrationTasks {
 
 				public class BuilderModifyColumnWithNameAndNullable {
 
-					public void withType(BaseTableColumnTypeTask.ColumnTypeEnum theColumnType, int theLength) {
-						if (theColumnType == BaseTableColumnTypeTask.ColumnTypeEnum.STRING) {
-							ModifyColumnTask task = new ModifyColumnTask();
-							task.setColumnName(myColumnName);
-							task.setTableName(myTableName);
-							task.setColumnLength(theLength);
-							task.setNullable(myNullable);
-							task.setColumnType(theColumnType);
-							addTask(task);
-						} else {
-							throw new IllegalArgumentException("Can not specify length for column of type " + theColumnType);
-						}
+					public void withType(BaseTableColumnTypeTask.ColumnTypeEnum theColumnType) {
+						withType(theColumnType, null);
 					}
 
+					public void withType(BaseTableColumnTypeTask.ColumnTypeEnum theColumnType, Integer theLength) {
+						if (theColumnType == BaseTableColumnTypeTask.ColumnTypeEnum.STRING) {
+							if (theLength == null || theLength == 0) {
+								throw new IllegalArgumentException("Can not specify length 0 for column of type " + theColumnType);
+							}
+						} else {
+							if (theLength != null) {
+								throw new IllegalArgumentException("Can not specify length for column of type " + theColumnType);
+							}
+						}
+
+						ModifyColumnTask task = new ModifyColumnTask();
+						task.setColumnName(myColumnName);
+						task.setTableName(myTableName);
+						if (theLength != null) {
+							task.setColumnLength(theLength);
+						}
+						task.setNullable(myNullable);
+						task.setColumnType(theColumnType);
+						addTask(task);
+
+					}
+
+				}
+			}
+
+			public class BuilderAddForeignKey extends BuilderModifyColumnWithName {
+				public BuilderAddForeignKeyToColumn toColumn(String theColumnName) {
+					myColumnName = theColumnName;
+					return new BuilderAddForeignKeyToColumn();
+				}
+
+				public class BuilderAddForeignKeyToColumn {
+					public void references(String theForeignTable, String theForeignColumn) {
+						AddForeignKeyTask task = new AddForeignKeyTask();
+						task.setTableName(myTableName);
+						task.setConstraintName(myForeignKeyName);
+						task.setColumnName(myColumnName);
+						task.setForeignTableName(theForeignTable);
+						task.setForeignColumnName(theForeignColumn);
+						addTask(task);
+					}
 				}
 			}
 		}

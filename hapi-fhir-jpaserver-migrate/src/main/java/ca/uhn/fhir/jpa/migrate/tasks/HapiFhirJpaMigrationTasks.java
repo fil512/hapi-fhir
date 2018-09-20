@@ -31,7 +31,7 @@ import ca.uhn.fhir.jpa.migrate.tasks.api.BaseMigrationTasks;
 import ca.uhn.fhir.util.VersionEnum;
 
 @SuppressWarnings({"UnstableApiUsage", "SqlNoDataSourceInspection", "SpellCheckingInspection"})
-public class HapiFhirJpaMigrationTasks extends BaseMigrationTasks {
+public class HapiFhirJpaMigrationTasks extends BaseMigrationTasks<VersionEnum> {
 
 	/**
 	 * Constructor
@@ -255,8 +255,11 @@ public class HapiFhirJpaMigrationTasks extends BaseMigrationTasks {
 			.addIndex("IDX_RESPARMPRESENT_HASHPRES")
 			.unique(false)
 			.withColumns("HASH_PRESENCE");
+
 		ArbitrarySqlTask consolidateSearchParamPresenceIndexesTask = new ArbitrarySqlTask("Consolidate search parameter presence indexes");
+		consolidateSearchParamPresenceIndexesTask.setExecuteOnlyIfTableExists("HFJ_SEARCH_PARM");
 		consolidateSearchParamPresenceIndexesTask.setBatchSize(1);
+
 		String sql = "SELECT " +
 			"HFJ_SEARCH_PARM.RES_TYPE RES_TYPE, HFJ_SEARCH_PARM.PARAM_NAME PARAM_NAME, " +
 			"HFJ_RES_PARAM_PRESENT.PID PID, HFJ_RES_PARAM_PRESENT.SP_ID SP_ID, HFJ_RES_PARAM_PRESENT.SP_PRESENT SP_PRESENT, HFJ_RES_PARAM_PRESENT.HASH_PRESENCE HASH_PRESENCE " +
@@ -279,7 +282,7 @@ public class HapiFhirJpaMigrationTasks extends BaseMigrationTasks {
 		trmConcept
 			.addColumn("CONCEPT_UPDATED")
 			.nullable()
-			.type(BaseTableColumnTypeTask.ColumnTypeEnum.DATE_TIMESTAMPT);
+			.type(BaseTableColumnTypeTask.ColumnTypeEnum.DATE_TIMESTAMP);
 		trmConcept
 			.addIndex("IDX_CONCEPT_UPDATED")
 			.unique(false)

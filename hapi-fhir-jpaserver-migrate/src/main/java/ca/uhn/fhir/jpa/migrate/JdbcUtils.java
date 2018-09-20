@@ -25,7 +25,6 @@ import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.ColumnMapRowMapper;
-import org.thymeleaf.util.StringUtils;
 
 import javax.sql.DataSource;
 import java.sql.*;
@@ -34,6 +33,8 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
+import static org.thymeleaf.util.StringUtils.toUpperCase;
+
 public class JdbcUtils {
 	private static final Logger ourLog = LoggerFactory.getLogger(JdbcUtils.class);
 
@@ -41,13 +42,14 @@ public class JdbcUtils {
 	 * Retrieve all index names
 	 */
 	public static Set<String> getIndexNames(DriverTypeEnum.ConnectionProperties theConnectionProperties, String theTableName) throws SQLException {
+
 		DataSource dataSource = Objects.requireNonNull(theConnectionProperties.getDataSource());
 		Connection connection = dataSource.getConnection();
 		return theConnectionProperties.getTxTemplate().execute(t -> {
 			DatabaseMetaData metadata;
 			try {
 				metadata = connection.getMetaData();
-				ResultSet indexes = metadata.getIndexInfo(null, null, theTableName, false, false);
+				ResultSet indexes = metadata.getIndexInfo(null, null, theTableName, false, true);
 
 				Set<String> indexNames = new HashSet<>();
 				while (indexes.next()) {
@@ -55,7 +57,7 @@ public class JdbcUtils {
 					ourLog.debug("*** Next index: {}", new ColumnMapRowMapper().mapRow(indexes, 0));
 
 					String indexName = indexes.getString("INDEX_NAME");
-					indexName = StringUtils.toUpperCase(indexName, Locale.US);
+					indexName = toUpperCase(indexName, Locale.US);
 					indexNames.add(indexName);
 				}
 
@@ -79,7 +81,7 @@ public class JdbcUtils {
 
 				while (indexes.next()) {
 					String indexName = indexes.getString("INDEX_NAME");
-					if (indexName.equalsIgnoreCase(theIndexName)) {
+					if (theIndexName.equalsIgnoreCase(indexName)) {
 						boolean nonUnique = indexes.getBoolean("NON_UNIQUE");
 						return !nonUnique;
 					}
@@ -104,20 +106,33 @@ public class JdbcUtils {
 				DatabaseMetaData metadata;
 				try {
 					metadata = connection.getMetaData();
-					ResultSet indexes = metadata.getColumns(null, null, theTableName, theColumnName);
+					ResultSet indexes = metadata.getColumns(null, null, null, null);
 
-					indexes.next();
+					while (indexes.next()) {
 
-					int dataType = indexes.getInt("DATA_TYPE");
-					Long length = indexes.getLong("COLUMN_SIZE");
-					switch (dataType) {
-						case Types.VARCHAR:
-							return BaseTableColumnTypeTask.ColumnTypeEnum.STRING.getDescriptor(length);
-						case Types.BIGINT:
-							return BaseTableColumnTypeTask.ColumnTypeEnum.LONG.getDescriptor(length);
-						default:
-							throw new IllegalArgumentException("Don't know how to handle datatype: " + dataType);
+						String tableName = toUpperCase(indexes.getString("TABLE_NAME"), Locale.US);
+						if (!theTableName.equalsIgnoreCase(tableName)) {
+							continue;
+						}
+						String columnName = toUpperCase(indexes.getString("COLUMN_NAME"), Locale.US);
+						if (!theColumnName.equalsIgnoreCase(columnName)) {
+							continue;
+						}
+
+						int dataType = indexes.getInt("DATA_TYPE");
+						Long length = indexes.getLong("COLUMN_SIZE");
+						switch (dataType) {
+							case Types.VARCHAR:
+								return BaseTableColumnTypeTask.ColumnTypeEnum.STRING.getDescriptor(length);
+							case Types.BIGINT:
+								return BaseTableColumnTypeTask.ColumnTypeEnum.LONG.getDescriptor(null);
+							default:
+								throw new IllegalArgumentException("Don't know how to handle datatype: " + dataType);
+						}
+
 					}
+
+					return null;
 
 				} catch (SQLException e) {
 					throw new InternalErrorException(e);
@@ -130,6 +145,41 @@ public class JdbcUtils {
 	/**
 	 * Retrieve all index names
 	 */
+	public static Set<String> getForeignKeys(DriverTypeEnum.ConnectionProperties theConnectionProperties, String theTableName, String theForeignTable) throws SQLException {
+		DataSource dataSource = Objects.requireNonNull(theConnectionProperties.getDataSource());
+		Connection connection = dataSource.getConnection();
+		return theConnectionProperties.getTxTemplate().execute(t -> {
+			DatabaseMetaData metadata;
+			try {
+				metadata = connection.getMetaData();
+				ResultSet indexes = metadata.getCrossReference(null, null, theTableName, null, null, theForeignTable);
+
+				Set<String> columnNames = new HashSet<>();
+				while (indexes.next()) {
+					String tableName = toUpperCase(indexes.getString("PKTABLE_NAME"), Locale.US);
+					if (!theTableName.equalsIgnoreCase(tableName)) {
+						continue;
+					}
+					tableName = toUpperCase(indexes.getString("FKTABLE_NAME"), Locale.US);
+					if (!theForeignTable.equalsIgnoreCase(tableName)) {
+						continue;
+					}
+
+					String fkName = indexes.getString("FK_NAME");
+					fkName = toUpperCase(fkName, Locale.US);
+					columnNames.add(fkName);
+				}
+
+				return columnNames;
+			} catch (SQLException e) {
+				throw new InternalErrorException(e);
+			}
+		});
+	}
+
+		/**
+        * Retrieve all index names
+        */
 	public static Set<String> getColumnNames(DriverTypeEnum.ConnectionProperties theConnectionProperties, String theTableName) throws SQLException {
 		DataSource dataSource = Objects.requireNonNull(theConnectionProperties.getDataSource());
 		Connection connection = dataSource.getConnection();
@@ -137,12 +187,17 @@ public class JdbcUtils {
 			DatabaseMetaData metadata;
 			try {
 				metadata = connection.getMetaData();
-				ResultSet indexes = metadata.getColumns(null, null, theTableName, null);
+				ResultSet indexes = metadata.getColumns(null, null, null, null);
 
 				Set<String> columnNames = new HashSet<>();
 				while (indexes.next()) {
+					String tableName = toUpperCase(indexes.getString("TABLE_NAME"), Locale.US);
+					if (!theTableName.equalsIgnoreCase(tableName)) {
+						continue;
+					}
+
 					String columnName = indexes.getString("COLUMN_NAME");
-					columnName = StringUtils.toUpperCase(columnName, Locale.US);
+					columnName = toUpperCase(columnName, Locale.US);
 					columnNames.add(columnName);
 				}
 
@@ -166,7 +221,7 @@ public class JdbcUtils {
 				Set<String> columnNames = new HashSet<>();
 				while (tables.next()) {
 					String tableName = tables.getString("TABLE_NAME");
-					tableName = StringUtils.toUpperCase(tableName, Locale.US);
+					tableName = toUpperCase(tableName, Locale.US);
 
 					String tableType = tables.getString("TABLE_TYPE");
 					if ("SYSTEM TABLE".equalsIgnoreCase(tableType)) {
@@ -181,5 +236,41 @@ public class JdbcUtils {
 				throw new InternalErrorException(e);
 			}
 		});
+	}
+
+	public static boolean isColumnNullable(DriverTypeEnum.ConnectionProperties theConnectionProperties, String theTableName, String theColumnName) throws SQLException {
+		DataSource dataSource = Objects.requireNonNull(theConnectionProperties.getDataSource());
+		Connection connection = dataSource.getConnection();
+		//noinspection ConstantConditions
+		return theConnectionProperties.getTxTemplate().execute(t -> {
+			DatabaseMetaData metadata;
+			try {
+				metadata = connection.getMetaData();
+				ResultSet tables = metadata.getColumns(null, null, null, null);
+
+				while (tables.next()) {
+					String tableName = toUpperCase(tables.getString("TABLE_NAME"), Locale.US);
+					if (!theTableName.equalsIgnoreCase(tableName)) {
+						continue;
+					}
+
+					if (theColumnName.equalsIgnoreCase(tables.getString("COLUMN_NAME"))) {
+						String nullable = tables.getString("IS_NULLABLE");
+						if ("YES".equalsIgnoreCase(nullable)) {
+							return true;
+						} else if ("NO".equalsIgnoreCase(nullable)) {
+							return false;
+						} else {
+							throw new IllegalStateException("Unknown nullable: " + nullable);
+						}
+					}
+				}
+
+				throw new IllegalStateException("Did not find column " + theColumnName);
+			} catch (SQLException e) {
+				throw new InternalErrorException(e);
+			}
+		});
+
 	}
 }
