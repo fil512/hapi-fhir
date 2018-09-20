@@ -525,7 +525,7 @@ public class QuestionnaireResponseValidatorR4Test {
 		qa.addItem().setLinkId("link0").addAnswer().setValue(new Coding().setSystem("http://codesystems.com/system").setCode("code0"));
 		errors = myVal.validateWithResult(qa);
 		errors = stripBindingHasNoSourceMessage(errors);
-		assertEquals(errors.toString(), 0, errors.getMessages().size());
+		assertEquals(errors.getMessages().toString(), 0, errors.getMessages().size());
 
 		// Bad code
 
