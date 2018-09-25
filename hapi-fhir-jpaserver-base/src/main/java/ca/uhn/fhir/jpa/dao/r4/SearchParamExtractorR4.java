@@ -9,9 +9,9 @@ package ca.uhn.fhir.jpa.dao.r4;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -48,6 +48,8 @@ import javax.measure.unit.NonSI;
 import javax.measure.unit.Unit;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -55,7 +57,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 public class SearchParamExtractorR4 extends BaseSearchParamExtractor implements ISearchParamExtractor {
 
 	private static final org.slf4j.Logger ourLog = org.slf4j.LoggerFactory.getLogger(SearchParamExtractorR4.class);
-
+	private static final Pattern ourReferenceWithWhereClauseAtTailPattern = Pattern.compile("(.*)\\.where\\(resolve\\(\\) is ([a-zA-Z]+)\\)");
 	@Autowired
 	private org.hl7.fhir.r4.hapi.ctx.IValidationSupport myValidationSupport;
 
@@ -112,8 +114,33 @@ public class SearchParamExtractorR4 extends BaseSearchParamExtractor implements 
 		for (String path : nextPathsSplit) {
 			path = path.trim();
 			if (isNotBlank(path)) {
+
+				// Optimize paths in the form:
+				//     Encounter.location.location.where(resolve() is Location)
+				// So that we don't need to actually do resolves all the time
+				// as that would be horrible for performance
+				Matcher matcher = ourReferenceWithWhereClauseAtTailPattern.matcher(path);
+				String wantType = null;
+				if (matcher.matches()) {
+					path = matcher.group(1);
+					wantType = matcher.group(1);
+				}
+
 				for (Object next : extractValues(path, theResource)) {
-					retVal.add(new PathAndRef(path, next));
+
+					boolean skip = false;
+					if (isNotBlank(wantType)) {
+						if (next instanceof Reference) {
+							Reference nextReference = (Reference) next;
+							if (nextReference.getReferenceElement().getResourceType().equals(wantType)) {
+								skip = true;
+							}
+						}
+					}
+
+					if (!skip) {
+						retVal.add(new PathAndRef(path, next));
+					}
 				}
 			}
 		}
@@ -447,7 +474,7 @@ public class SearchParamExtractorR4 extends BaseSearchParamExtractor implements 
 							addSearchTerm(theEntity, retVal, nextSpName, value.toPlainString());
 						}
 					} else if (nextObject instanceof Range) {
-						SimpleQuantity low = ((Range) nextObject).getLow();
+						Quantity low = ((Range) nextObject).getLow();
 						if (low != null) {
 							BigDecimal value = low.getValue();
 							if (value != null) {

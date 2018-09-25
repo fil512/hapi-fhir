@@ -34,6 +34,7 @@ import java.util.Date;
 import java.util.TimeZone;
 import java.util.zip.DataFormatException;
 
+import ca.uhn.fhir.model.api.TemporalPrecisionEnum;
 import org.apache.commons.lang3.time.DateUtils;
 
 import ca.uhn.fhir.model.api.annotation.DatatypeDef;

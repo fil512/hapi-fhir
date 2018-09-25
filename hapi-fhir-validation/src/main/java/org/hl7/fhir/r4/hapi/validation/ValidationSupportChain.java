@@ -1,6 +1,8 @@
 package org.hl7.fhir.r4.hapi.validation;
 
 import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.rest.server.exceptions.InvalidRequestException;
+import org.hl7.fhir.exceptions.TerminologyServiceException;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.hapi.ctx.IValidationSupport;
 import org.hl7.fhir.r4.model.CodeSystem;
@@ -51,7 +53,8 @@ public class ValidationSupportChain implements IValidationSupport {
 				return next.expandValueSet(theCtx, theInclude);
 			}
 		}
-		return myChain.get(0).expandValueSet(theCtx, theInclude);
+
+		throw new InvalidRequestException("unable to find code system " + theInclude.getSystem());
 	}
 
   @Override

@@ -320,7 +320,9 @@ public class FhirInstanceValidator extends BaseValidatorBridge implements IValid
 
 		for (int i = 0; i < messages.size(); i++) {
 			ValidationMessage next = messages.get(i);
-			if ("Binding has no source, so can't be checked".equals(next.getMessage())) {
+			String message = next.getMessage();
+			if ("Binding has no source, so can't be checked".equals(message) ||
+			    "ValueSet http://hl7.org/fhir/ValueSet/mimetypes not found".equals(message)) {
 				messages.remove(i);
 				i--;
 			}

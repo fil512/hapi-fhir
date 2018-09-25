@@ -63,63 +63,20 @@ import org.hl7.fhir.instance.model.api.IBaseOperationOutcome;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.instance.model.api.IIdType;
 import org.hl7.fhir.r4.hapi.validation.FhirInstanceValidator;
-import org.hl7.fhir.r4.model.AuditEvent;
-import org.hl7.fhir.r4.model.BaseResource;
-import org.hl7.fhir.r4.model.Basic;
-import org.hl7.fhir.r4.model.Binary;
-import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.*;
 import org.hl7.fhir.r4.model.Bundle.BundleEntryComponent;
 import org.hl7.fhir.r4.model.Bundle.BundleLinkComponent;
 import org.hl7.fhir.r4.model.Bundle.BundleType;
 import org.hl7.fhir.r4.model.Bundle.HTTPVerb;
 import org.hl7.fhir.r4.model.Bundle.SearchEntryMode;
-import org.hl7.fhir.r4.model.CarePlan;
-import org.hl7.fhir.r4.model.CodeSystem;
-import org.hl7.fhir.r4.model.CodeType;
-import org.hl7.fhir.r4.model.Coding;
-import org.hl7.fhir.r4.model.Condition;
-import org.hl7.fhir.r4.model.DateTimeType;
-import org.hl7.fhir.r4.model.DateType;
-import org.hl7.fhir.r4.model.Device;
-import org.hl7.fhir.r4.model.DocumentManifest;
-import org.hl7.fhir.r4.model.DocumentReference;
-import org.hl7.fhir.r4.model.Encounter;
 import org.hl7.fhir.r4.model.Encounter.EncounterLocationComponent;
 import org.hl7.fhir.r4.model.Encounter.EncounterStatus;
 import org.hl7.fhir.r4.model.Enumerations.AdministrativeGender;
-import org.hl7.fhir.r4.model.Extension;
-import org.hl7.fhir.r4.model.IdType;
-import org.hl7.fhir.r4.model.ImagingStudy;
-import org.hl7.fhir.r4.model.ImmunizationRecommendation;
-import org.hl7.fhir.r4.model.InstantType;
-import org.hl7.fhir.r4.model.IntegerType;
-import org.hl7.fhir.r4.model.Location;
-import org.hl7.fhir.r4.model.Medication;
-import org.hl7.fhir.r4.model.MedicationAdministration;
-import org.hl7.fhir.r4.model.MedicationRequest;
-import org.hl7.fhir.r4.model.Meta;
 import org.hl7.fhir.r4.model.Narrative.NarrativeStatus;
-import org.hl7.fhir.r4.model.Observation;
 import org.hl7.fhir.r4.model.Observation.ObservationStatus;
-import org.hl7.fhir.r4.model.OperationOutcome;
-import org.hl7.fhir.r4.model.Organization;
-import org.hl7.fhir.r4.model.Parameters;
-import org.hl7.fhir.r4.model.Patient;
-import org.hl7.fhir.r4.model.Period;
-import org.hl7.fhir.r4.model.Practitioner;
-import org.hl7.fhir.r4.model.Quantity;
-import org.hl7.fhir.r4.model.Questionnaire;
 import org.hl7.fhir.r4.model.Questionnaire.QuestionnaireItemType;
-import org.hl7.fhir.r4.model.QuestionnaireResponse;
-import org.hl7.fhir.r4.model.Reference;
-import org.hl7.fhir.r4.model.ServiceRequest;
-import org.hl7.fhir.r4.model.StringType;
-import org.hl7.fhir.r4.model.StructureDefinition;
-import org.hl7.fhir.r4.model.Subscription;
 import org.hl7.fhir.r4.model.Subscription.SubscriptionChannelType;
 import org.hl7.fhir.r4.model.Subscription.SubscriptionStatus;
-import org.hl7.fhir.r4.model.UnsignedIntType;
-import org.hl7.fhir.r4.model.ValueSet;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -169,6 +126,7 @@ import ca.uhn.fhir.util.StopWatch;
 import ca.uhn.fhir.util.TestUtil;
 import ca.uhn.fhir.util.UrlUtil;
 
+@SuppressWarnings("Duplicates")
 public class ResourceProviderR4Test extends BaseResourceProviderR4Test {
 
 	private static final org.slf4j.Logger ourLog = org.slf4j.LoggerFactory.getLogger(ResourceProviderR4Test.class);
@@ -547,7 +505,7 @@ public class ResourceProviderR4Test extends BaseResourceProviderR4Test {
 		IIdType optId = ourClient.create().resource(options).execute().getId();
 
 		Questionnaire q = new Questionnaire();
-		q.addItem().setLinkId("link0").setRequired(false).setType(QuestionnaireItemType.CHOICE).setOptions((optId.getValue()));
+		q.addItem().setLinkId("link0").setRequired(false).setType(QuestionnaireItemType.CHOICE).setAnswerValueSet((optId.getValue()));
 		IIdType qId = ourClient.create().resource(q).execute().getId();
 
 		QuestionnaireResponse qa;
@@ -747,7 +705,6 @@ public class ResourceProviderR4Test extends BaseResourceProviderR4Test {
 		location.setPeriod(new Period().setStart(new Date(), TemporalPrecisionEnum.SECOND).setEnd(new Date(), TemporalPrecisionEnum.SECOND));
 		IIdType e1id = ourClient.create().resource(e1).execute().getId();
 
-		//@formatter:off
 		Bundle res = ourClient.search()
 			.forResource(Encounter.class)
 			.where(Encounter.IDENTIFIER.exactly().systemAndCode("urn:foo", "testDeepChainingE1"))
@@ -755,7 +712,8 @@ public class ResourceProviderR4Test extends BaseResourceProviderR4Test {
 			.include(Location.INCLUDE_PARTOF.asRecursive())
 			.returnBundle(Bundle.class)
 			.execute();
-		//@formatter:on
+
+		ourLog.info(myFhirCtx.newXmlParser().setPrettyPrint(true).encodeResourceToString(res));
 
 		assertEquals(3, res.getEntry().size());
 		assertEquals(1, genResourcesOfType(res, Encounter.class).size());
@@ -830,16 +788,13 @@ public class ResourceProviderR4Test extends BaseResourceProviderR4Test {
 		String methodName = "testDeleteConditionalNoMatches";
 
 		HttpDelete delete = new HttpDelete(ourServerBase + "/Patient?identifier=" + methodName);
-		CloseableHttpResponse resp = ourHttpClient.execute(delete);
-		try {
+		try (CloseableHttpResponse resp = ourHttpClient.execute(delete)) {
 			ourLog.info(resp.toString());
 			String response = IOUtils.toString(resp.getEntity().getContent(), StandardCharsets.UTF_8);
 			ourLog.info(response);
 			assertEquals(200, resp.getStatusLine().getStatusCode());
 			assertThat(response, containsString(
 				"<issue><severity value=\"warning\"/><code value=\"not-found\"/><diagnostics value=\"Unable to find resource matching URL &quot;Patient?identifier=testDeleteConditionalNoMatches&quot;. Deletion failed.\"/></issue>"));
-		} finally {
-			IOUtils.closeQuietly(resp);
 		}
 
 	}
@@ -847,14 +802,11 @@ public class ResourceProviderR4Test extends BaseResourceProviderR4Test {
 	@Test
 	public void testDeleteInvalidReference() throws IOException {
 		HttpDelete delete = new HttpDelete(ourServerBase + "/Patient");
-		CloseableHttpResponse response = ourHttpClient.execute(delete);
-		try {
+		try (CloseableHttpResponse response = ourHttpClient.execute(delete)) {
 			String responseString = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
 			ourLog.info(responseString);
 			assertEquals(400, response.getStatusLine().getStatusCode());
 			assertThat(responseString, containsString("Can not perform delete, no ID provided"));
-		} finally {
-			response.close();
 		}
 	}
 
@@ -1096,7 +1048,7 @@ public class ResourceProviderR4Test extends BaseResourceProviderR4Test {
 		IIdType orgId2 = ourClient.create().resource(org2).execute().getId().toUnqualifiedVersionless();
 
 		Device dev = new Device();
-		dev.setModel(methodName);
+		dev.setManufacturer(methodName);
 		dev.getOwner().setReferenceElement(orgId2);
 		IIdType devId = ourClient.create().resource(dev).execute().getId().toUnqualifiedVersionless();
 
@@ -1122,7 +1074,7 @@ public class ResourceProviderR4Test extends BaseResourceProviderR4Test {
 		Observation obs = new Observation();
 		obs.getSubject().setReferenceElement(patientId);
 		obs.getDevice().setReferenceElement(devId);
-		obs.getContext().setReferenceElement(encId);
+		obs.getEncounter().setReferenceElement(encId);
 		IIdType obsId = ourClient.create().resource(obs).execute().getId().toUnqualifiedVersionless();
 
 		ourLog.info("IDs: EncU:" + encUId.getIdPart() + " Enc:" + encId.getIdPart() + "  " + patientId.toUnqualifiedVersionless());
@@ -1160,7 +1112,7 @@ public class ResourceProviderR4Test extends BaseResourceProviderR4Test {
 		IIdType orgId2 = ourClient.create().resource(org2).execute().getId().toUnqualifiedVersionless();
 
 		Device dev = new Device();
-		dev.setModel(methodName);
+		dev.setManufacturer(methodName);
 		dev.getOwner().setReferenceElement(orgId2);
 		IIdType devId = ourClient.create().resource(dev).execute().getId().toUnqualifiedVersionless();
 
@@ -1185,7 +1137,7 @@ public class ResourceProviderR4Test extends BaseResourceProviderR4Test {
 		Observation obs = new Observation();
 		obs.getSubject().setReferenceElement(patientId);
 		obs.getDevice().setReferenceElement(devId);
-		obs.getContext().setReferenceElement(encId);
+		obs.getEncounter().setReferenceElement(encId);
 		IIdType obsId = ourClient.create().resource(obs).execute().getId().toUnqualifiedVersionless();
 
 		Parameters output = ourClient.operation().onType(Encounter.class).named("everything").withNoParameters(Parameters.class).execute();
@@ -1402,7 +1354,7 @@ public class ResourceProviderR4Test extends BaseResourceProviderR4Test {
 		IIdType orgId2 = ourClient.create().resource(org2).execute().getId().toUnqualifiedVersionless();
 
 		Device dev = new Device();
-		dev.setModel(methodName);
+		dev.setManufacturer(methodName);
 		dev.getOwner().setReferenceElement(orgId2);
 		IIdType devId = ourClient.create().resource(dev).execute().getId().toUnqualifiedVersionless();
 
@@ -2537,7 +2489,7 @@ public class ResourceProviderR4Test extends BaseResourceProviderR4Test {
 		assertEquals("1", patientId.getVersionIdPart());
 
 		AuditEvent ae = new org.hl7.fhir.r4.model.AuditEvent();
-		ae.addEntity().getReference().setReference(patientId.toUnqualified().getValue());
+		ae.addEntity().getWhat().setReference(patientId.toUnqualified().getValue());
 		IIdType aeId = ourClient.create().resource(ae).execute().getId();
 		assertEquals("1", aeId.getVersionIdPart());
 
@@ -2546,8 +2498,8 @@ public class ResourceProviderR4Test extends BaseResourceProviderR4Test {
 		assertFalse(patient.getManagingOrganization().getReferenceElement().hasVersionIdPart());
 
 		ae = ourClient.read().resource(AuditEvent.class).withId(aeId).execute();
-		assertTrue(ae.getEntityFirstRep().getReference().getReferenceElement().hasIdPart());
-		assertTrue(ae.getEntityFirstRep().getReference().getReferenceElement().hasVersionIdPart());
+		assertTrue(ae.getEntityFirstRep().getWhat().getReferenceElement().hasIdPart());
+		assertTrue(ae.getEntityFirstRep().getWhat().getReferenceElement().hasVersionIdPart());
 
 	}
 
@@ -3740,14 +3692,14 @@ public class ResourceProviderR4Test extends BaseResourceProviderR4Test {
 		try {
 			ourClient
 				.search()
-				.forResource(ImmunizationRecommendation.class)
-				.where(ImmunizationRecommendation.DOSE_NUMBER.withPrefix(ParamPrefixEnum.ENDS_BEFORE).number(100))
+				.forResource(Sequence.class)
+				.where(Sequence.END.withPrefix(ParamPrefixEnum.ENDS_BEFORE).number(100))
 				.prettyPrint()
 				.returnBundle(Bundle.class)
 				.execute();
 			fail();
 		} catch (InvalidRequestException e) {
-			assertThat(e.getMessage(), containsString("Unable to handle number prefix \"eb\" for value: eb100"));
+			assertThat(e.getMessage(), containsString("Unable to handle number prefix \"end\" for value: eb100"));
 		}
 	}
 

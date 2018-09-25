@@ -248,7 +248,7 @@ public final class HapiWorkerContext implements IWorkerContext, ValueSetExpander
       }
     }
 
-    return new ValidationResult(null, null);
+    return new ValidationResult(IssueSeverity.ERROR, null);
   }
 
   @Override

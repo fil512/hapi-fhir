@@ -144,6 +144,7 @@ public class QuestionnaireResponseValidatorR4Test {
 			}
 
 			QuestionnaireResponse qa = new QuestionnaireResponse();
+			qa.getText().setDiv(new XhtmlNode().setValue("<div>AA</div>")).setStatus(Narrative.NarrativeStatus.GENERATED);
 			qa.setStatus(QuestionnaireResponseStatus.INPROGRESS);
 			qa.setQuestionnaire("http://example.com/Questionnaire/q1");
 			qa.addItem().setLinkId(linkId).addAnswer().setValue(answerValues[i]);
@@ -440,6 +441,7 @@ public class QuestionnaireResponseValidatorR4Test {
 
 		// create the response
 		QuestionnaireResponse qa = new QuestionnaireResponse();
+		qa.getText().setDiv(new XhtmlNode().setValue("<div>AA</div>")).setStatus(Narrative.NarrativeStatus.GENERATED);
 		qa.setStatus(QuestionnaireResponseStatus.INPROGRESS);
 		qa.setQuestionnaire(questionnaireRef);
 		qa.addItem().setLinkId("link1")
@@ -564,6 +566,17 @@ public class QuestionnaireResponseValidatorR4Test {
 		assertThat(errors.toString(), containsString("The value provided (null::code1) is not in the options value set in the questionnaire"));
 		assertThat(errors.toString(), containsString("QuestionnaireResponse.item.answer"));
 
+		// System only in known codesystem
+		qa = new QuestionnaireResponse();
+		qa.getText().setDiv(new XhtmlNode().setValue("<div>AA</div>")).setStatus(Narrative.NarrativeStatus.GENERATED);
+		qa.setStatus(QuestionnaireResponseStatus.COMPLETED);
+		qa.getQuestionnaireElement().setValue(questionnaireRef);
+		qa.addItem().setLinkId("link0").addAnswer().setValue(new Coding().setSystem("http://codesystems.com/system").setCode(null));
+		errors = myVal.validateWithResult(qa);
+		ourLog.info(errors.toString());
+		assertThat(errors.toString(), containsString("The value provided (http://codesystems.com/system::null) is not in the options value set in the questionnaire"));
+		assertThat(errors.toString(), containsString("QuestionnaireResponse.item.answer"));
+
 		qa = new QuestionnaireResponse();
 		qa.getText().setDiv(new XhtmlNode().setValue("<div>AA</div>")).setStatus(Narrative.NarrativeStatus.GENERATED);
 		qa.setStatus(QuestionnaireResponseStatus.COMPLETED);
@@ -571,7 +584,8 @@ public class QuestionnaireResponseValidatorR4Test {
 		qa.addItem().setLinkId("link0").addAnswer().setValue(new Coding().setSystem("http://system").setCode(null));
 		errors = myVal.validateWithResult(qa);
 		ourLog.info(errors.toString());
-		assertThat(errors.toString(), containsString("The value provided (http://system::null) is not in the options value set in the questionnaire"));
+		// This is set in InstanceValidator#validateAnswerCode
+		assertThat(errors.toString(), containsString("INFORMATION - Code http://system/null was not validated because the code system is not present"));
 		assertThat(errors.toString(), containsString("QuestionnaireResponse.item.answer"));
 
 		// Wrong type

@@ -195,8 +195,18 @@ public class FhirInstanceValidatorDstu3Test {
 		when(myMockSupport.fetchCodeSystem(nullable(FhirContext.class), nullable(String.class))).thenAnswer(new Answer<CodeSystem>() {
 			@Override
 			public CodeSystem answer(InvocationOnMock theInvocation) {
-				CodeSystem retVal = myDefaultValidationSupport.fetchCodeSystem((FhirContext) theInvocation.getArguments()[0], (String) theInvocation.getArguments()[1]);
-				ourLog.debug("fetchCodeSystem({}) : {}", new Object[] {theInvocation.getArguments()[1], retVal});
+				CodeSystem retVal;
+
+				String id = (String) theInvocation.getArguments()[1];
+				retVal = myCodeSystems.get(id);
+
+				if (retVal == null) {
+					retVal = myDefaultValidationSupport.fetchCodeSystem((FhirContext) theInvocation.getArguments()[0], id);
+				}
+
+				if (retVal == null) {
+					ourLog.info("fetchCodeSystem({}) : {}", new Object[]{id, retVal});
+				}
 				return retVal;
 			}
 		});
@@ -407,6 +417,9 @@ public class FhirInstanceValidatorDstu3Test {
 
 		ValueSet vsConfidentiality = ourCtx.newJsonParser().parseResource(ValueSet.class, loadResource("/dstu3/bug824-vs-confidentiality.json"));
 		myValueSets.put("http://phr.kanta.fi/ValueSet/fiphr-vs-confidentiality", vsConfidentiality);
+
+		CodeSystem csMedicationContext = ourCtx.newJsonParser().parseResource(CodeSystem.class, loadResource("/dstu3/bug824-fhirphr-cs-medicationcontext.json"));
+		myCodeSystems.put("http://phr.kanta.fi/fiphr-cs-medicationcontext", csMedicationContext);
 
 		String input = loadResource("/dstu3/bug824-resource.json");
 		ValidationResult output = myVal.validateWithResult(input);

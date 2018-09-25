@@ -2619,7 +2619,7 @@ public class FhirResourceDaoR4SearchNoFtTest extends BaseJpaR4Test {
 			// Irrelevant include
 			SearchParameterMap params = new SearchParameterMap();
 			params.add(Patient.SP_FAMILY, new StringParam("Tester_" + methodName + "_P1"));
-			params.addInclude(Encounter.INCLUDE_EPISODEOFCARE);
+			params.addInclude(Encounter.INCLUDE_EPISODE_OF_CARE);
 			IBundleProvider search = myPatientDao.search(params);
 			List<IBaseResource> patients = toList(search);
 			assertEquals(1, patients.size());
