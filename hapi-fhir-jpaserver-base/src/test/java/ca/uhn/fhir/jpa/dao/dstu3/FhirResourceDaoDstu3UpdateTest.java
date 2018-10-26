@@ -309,8 +309,7 @@ public class FhirResourceDaoDstu3UpdateTest extends BaseJpaDstu3Test {
 		Date now = new Date();
 		Patient retrieved = myPatientDao.read(outcome.getId(), mySrd);
 		InstantType updated = retrieved.getMeta().getLastUpdatedElement().copy();
-		assertTrue(updated.before(now));
-
+		assertTrue(updated+" is before "+now, updated.before(now));
 		Thread.sleep(1000);
 
 		reset(myInterceptor);

@@ -21,8 +21,10 @@ import ca.uhn.fhir.parser.IParser;
 import ca.uhn.fhir.parser.StrictErrorHandler;
 import ca.uhn.fhir.rest.api.Constants;
 import ca.uhn.fhir.rest.api.EncodingEnum;
+import ca.uhn.fhir.rest.api.server.IBundleProvider;
 import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import ca.uhn.fhir.rest.server.interceptor.IServerInterceptor;
+import ca.uhn.fhir.util.DateUtils;
 import ca.uhn.fhir.util.TestUtil;
 import ca.uhn.fhir.util.UrlUtil;
 import org.apache.commons.io.IOUtils;
@@ -33,10 +35,12 @@ import org.hl7.fhir.dstu3.hapi.ctx.IValidationSupport;
 import org.hl7.fhir.dstu3.model.*;
 import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.instance.model.api.IBaseResource;
+import org.hl7.fhir.instance.model.api.IIdType;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
@@ -51,6 +55,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 import javax.persistence.EntityManager;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -332,6 +338,15 @@ public abstract class BaseJpaDstu3Test extends BaseJpaTest {
 		retVal.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 		retVal.afterPropertiesSet();
 		return retVal;
+	}
+
+	protected void logSearchResultDates(Logger thelog, IBundleProvider results) {
+		List<IBaseResource> resources = results.getResources(0, results.size());
+		for (IBaseResource resource : resources) {
+			IIdType id = resource.getIdElement();
+			Date lastUpdated = resource.getMeta().getLastUpdated();
+			thelog.info("id: <{}>, lastUpdated: {}", id, DateUtils.formatDate(lastUpdated, "yyyy-MMM-dd HH:mm:ss:SSS zzz"));
+		}
 	}
 
 	@AfterClass

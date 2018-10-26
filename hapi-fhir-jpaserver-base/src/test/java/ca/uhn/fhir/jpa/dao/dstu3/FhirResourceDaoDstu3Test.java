@@ -2886,6 +2886,7 @@ public class FhirResourceDaoDstu3Test extends BaseJpaDstu3Test {
 		pm = new SearchParameterMap();
 		pm.setSort(new SortSpec(Constants.PARAM_LASTUPDATED));
 		actual = toUnqualifiedVersionlessIds(myPatientDao.search(pm));
+		logSearchResultDates(ourLog, myPatientDao.search(pm));
 		assertThat(actual, contains(id1, id2, id3, id4));
 
 		pm = new SearchParameterMap();

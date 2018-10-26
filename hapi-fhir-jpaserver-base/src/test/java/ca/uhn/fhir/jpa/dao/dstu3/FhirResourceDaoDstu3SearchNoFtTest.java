@@ -11,6 +11,7 @@ import java.util.*;
 
 import javax.servlet.http.HttpServletRequest;
 
+import ca.uhn.fhir.util.DateUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hl7.fhir.dstu3.model.*;
@@ -1038,6 +1039,7 @@ public class FhirResourceDaoDstu3SearchNoFtTest extends BaseJpaDstu3Test {
 			SearchParameterMap params = new SearchParameterMap();
 			params.add(IAnyResource.SP_RES_LANGUAGE, new StringOrListParam().addOr(new StringParam("en_CA")).addOr(new StringParam("en_US")));
 			params.setLastUpdated(new DateRangeParam(betweenTime, null));
+			logSearchResultDates(ourLog, myPatientDao.search(params));
 			assertThat(toUnqualifiedVersionlessIds(myPatientDao.search(params)), containsInAnyOrder(id2));
 		}
 		{
@@ -1241,9 +1243,11 @@ public class FhirResourceDaoDstu3SearchNoFtTest extends BaseJpaDstu3Test {
 		assertThat(toUnqualifiedVersionlessIds(myPatientDao.search(map)), containsInAnyOrder(id1a, id1b));
 
 		map = new SearchParameterMap();
+		Date lastUpdated = myPatientDao.read(id1b, mySrd).getMeta().getLastUpdatedElement().getValue();
 		map.setLastUpdated(new DateRangeParam(new DateParam(ParamPrefixEnum.GREATERTHAN, startDateTime.getValue()),
-				new DateParam(ParamPrefixEnum.LESSTHAN, myPatientDao.read(id1b, mySrd).getMeta().getLastUpdatedElement().getValue())));
-		ourLog.info("Searching: {}", map.getLastUpdated());
+				new DateParam(ParamPrefixEnum.LESSTHAN, lastUpdated)));
+		ourLog.info("Searching for {} in {}", DateUtils.formatDate(lastUpdated, "yyyy-MMM-dd HH:mm:ss:SSS zzz"), map.getLastUpdated());
+		logSearchResultDates(ourLog, myPatientDao.search(map));
 		assertThat(toUnqualifiedVersionlessIds(myPatientDao.search(map)), containsInAnyOrder(id1a));
 	}
 
@@ -1649,6 +1653,10 @@ public class FhirResourceDaoDstu3SearchNoFtTest extends BaseJpaDstu3Test {
 		params.add(Observation.SP_SUBJECT, new ReferenceParam(Patient.SP_NAME, "testSearchResourceLinkWithChainWithMultipleTypes01"));
 		params.setLastUpdated(new DateRangeParam(between, after));
 		result = toUnqualifiedVersionlessIds(myObservationDao.search(params));
+		ourLog.info("Searching between {} and {}",
+			DateUtils.formatDate(between, "yyyy-MMM-dd HH:mm:ss:SSS zzz"),
+			DateUtils.formatDate(after, "yyyy-MMM-dd HH:mm:ss:SSS zzz"));
+		logSearchResultDates(ourLog, myObservationDao.search(params));
 		assertEquals(1, result.size());
 		assertThat(result, containsInAnyOrder(obsId02));
 
@@ -2911,6 +2919,7 @@ public class FhirResourceDaoDstu3SearchNoFtTest extends BaseJpaDstu3Test {
 			params.add("_tag", orListParam);
 			params.setLastUpdated(new DateRangeParam(betweenDate, null));
 			List<IIdType> patients = toUnqualifiedVersionlessIds(myOrganizationDao.search(params));
+			logSearchResultDates(ourLog, myOrganizationDao.search(params));
 			assertThat(patients, containsInAnyOrder(tag2id));
 		}
 		// TODO: get multiple/AND working
