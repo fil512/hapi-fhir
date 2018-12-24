@@ -42,9 +42,7 @@ public abstract class BaseBlockingQueueSubscribableChannelDstu3Test extends Base
 	private static RestfulServer ourListenerRestServer;
 	private static Server ourListenerServer;
 	protected static String ourListenerServerBase;
-	protected static List<Observation> ourCreatedObservations = Collections.synchronizedList(Lists.newArrayList());
-	protected static List<Observation> ourUpdatedObservations = Collections.synchronizedList(Lists.newArrayList());
-	protected static List<String> ourContentTypes = Collections.synchronizedList(new ArrayList<>());
+	protected static ObservationListener ourObservationListener;
 	private static SubscribableChannel ourSubscribableChannel;
 	private List<IIdType> mySubscriptionIds = Collections.synchronizedList(new ArrayList<>());
 	private long idCounter = 0;
@@ -117,8 +115,8 @@ public abstract class BaseBlockingQueueSubscribableChannelDstu3Test extends Base
 		ourListenerRestServer = new RestfulServer(FhirContext.forDstu3());
 		ourListenerServerBase = "http://localhost:" + ourListenerPort + "/fhir/context";
 
-		ObservationListener obsListener = new ObservationListener();
-		ourListenerRestServer.setResourceProviders(obsListener);
+		ourObservationListener = new ObservationListener(Observation.class);
+		ourListenerRestServer.setResourceProviders(ourObservationListener);
 
 		ourListenerServer = new Server(ourListenerPort);
 
@@ -138,29 +136,5 @@ public abstract class BaseBlockingQueueSubscribableChannelDstu3Test extends Base
 		ourListenerServer.stop();
 	}
 
-	public static class ObservationListener implements IResourceProvider {
-
-		@Create
-		public MethodOutcome create(@ResourceParam Observation theObservation, HttpServletRequest theRequest) {
-			ourLog.info("Received Listener Create");
-			ourContentTypes.add(theRequest.getHeader(ca.uhn.fhir.rest.api.Constants.HEADER_CONTENT_TYPE).replaceAll(";.*", ""));
-			ourCreatedObservations.add(theObservation);
-			return new MethodOutcome(new IdType("Observation/1"), true);
-		}
-
-		@Override
-		public Class<? extends IBaseResource> getResourceType() {
-			return Observation.class;
-		}
-
-		@Update
-		public MethodOutcome update(@ResourceParam Observation theObservation, HttpServletRequest theRequest) {
-			ourContentTypes.add(theRequest.getHeader(Constants.HEADER_CONTENT_TYPE).replaceAll(";.*", ""));
-			ourUpdatedObservations.add(theObservation);
-			ourLog.info("Received Listener Update (now have {} updates)", ourUpdatedObservations.size());
-			return new MethodOutcome(new IdType("Observation/1"), false);
-		}
-
-	}
 
 }

@@ -6,6 +6,10 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -25,11 +29,13 @@ public class SubscriptionMatchingSubscriberTest extends BaseBlockingQueueSubscri
 		createSubscription(criteria1, payload, ourListenerServerBase);
 		createSubscription(criteria2, payload, ourListenerServerBase);
 
+		CountDownLatch latch = ourObservationListener.newCountDownLatch(1);
+
 		sendObservation(code, "SNOMED-CT");
 
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(1, ourUpdatedObservations);
-		assertEquals(Constants.CT_FHIR_JSON_NEW, ourContentTypes.get(0));
+		assertTrue(latch.await(5L, TimeUnit.SECONDS));
+
+		assertEquals(Constants.CT_FHIR_JSON_NEW, ourObservationListener.getContentType(0));
 	}
 
 	@Test
@@ -43,11 +49,12 @@ public class SubscriptionMatchingSubscriberTest extends BaseBlockingQueueSubscri
 		createSubscription(criteria1, payload, ourListenerServerBase);
 		createSubscription(criteria2, payload, ourListenerServerBase);
 
+		CountDownLatch latch = ourObservationListener.newCountDownLatch(1);
+
 		sendObservation(code, "SNOMED-CT");
 
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(1, ourUpdatedObservations);
-		assertEquals(Constants.CT_FHIR_XML_NEW, ourContentTypes.get(0));
+		assertTrue(latch.await(5L, TimeUnit.SECONDS));
+		assertEquals(Constants.CT_FHIR_XML_NEW, ourObservationListener.getContentType(0));
 	}
 
 	@Test
