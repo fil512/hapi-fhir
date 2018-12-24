@@ -4,6 +4,7 @@ import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.jpa.dao.DaoConfig;
 import ca.uhn.fhir.jpa.provider.SubscriptionTriggeringProvider;
 import ca.uhn.fhir.jpa.provider.dstu3.BaseResourceProviderDstu3Test;
+import ca.uhn.fhir.jpa.subscription.ObservationListener;
 import ca.uhn.fhir.jpa.subscription.SubscriptionTestUtil;
 import ca.uhn.fhir.jpa.subscription.SubscriptionTriggeringSvcImpl;
 import ca.uhn.fhir.jpa.util.JpaConstants;
@@ -45,12 +46,12 @@ public class SubscriptionTriggeringDstu3Test extends BaseResourceProviderDstu3Te
 	private static RestfulServer ourListenerRestServer;
 	private static Server ourListenerServer;
 	private static String ourListenerServerBase;
-	private static List<Observation> ourCreatedObservations = Collections.synchronizedList(Lists.newArrayList());
-	private static List<Observation> ourUpdatedObservations = Collections.synchronizedList(Lists.newArrayList());
 	private static List<Patient> ourCreatedPatients = Lists.newArrayList();
 	private static List<Patient> ourUpdatedPatients = Lists.newArrayList();
-	private static List<String> ourContentTypes = new ArrayList<>();
 	private List<IIdType> mySubscriptionIds = new ArrayList<>();
+	private static final List<String> ourContentTypes = Collections.synchronizedList(new ArrayList<>());
+
+	protected static ObservationListener ourObservationListener;
 
 	@Autowired
 	private SubscriptionTestUtil mySubscriptionTestUtil;
@@ -92,11 +93,10 @@ public class SubscriptionTriggeringDstu3Test extends BaseResourceProviderDstu3Te
 	 */
 	@Before
 	public void beforeReset() {
-		ourCreatedObservations.clear();
-		ourUpdatedObservations.clear();
 		ourCreatedPatients.clear();
 		ourUpdatedPatients.clear();
 		ourContentTypes.clear();
+		ourObservationListener.clear();
 	}
 
 	private Subscription createSubscription(String theCriteria, String thePayload, String theEndpoint) throws InterruptedException {
@@ -154,9 +154,9 @@ public class SubscriptionTriggeringDstu3Test extends BaseResourceProviderDstu3Te
 
 		// Should see 1 subscription notification
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(1, ourUpdatedObservations);
-		assertEquals(Constants.CT_FHIR_JSON_NEW, ourContentTypes.get(0));
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(1);
+		assertEquals(Constants.CT_FHIR_JSON_NEW, ourObservationListener.getContentType(0));
 
 		Parameters response = ourClient
 			.operation()
@@ -169,8 +169,8 @@ public class SubscriptionTriggeringDstu3Test extends BaseResourceProviderDstu3Te
 		assertThat(responseValue, containsString("Subscription triggering job submitted as JOB ID"));
 
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(2, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(2);
 
 	}
 
@@ -196,8 +196,8 @@ public class SubscriptionTriggeringDstu3Test extends BaseResourceProviderDstu3Te
 			ourClient.update().resource(o).execute();
 		}
 
-		waitForSize(50, ourUpdatedObservations);
-		waitForSize(0, ourCreatedObservations);
+		ourObservationListener.waitForUpdatedSize(50);
+		ourObservationListener.waitForCreatedSize(0);
 		waitForSize(0, ourCreatedPatients);
 		waitForSize(50, ourUpdatedPatients);
 		beforeReset();
@@ -225,8 +225,8 @@ public class SubscriptionTriggeringDstu3Test extends BaseResourceProviderDstu3Te
 
 //		Thread.sleep(1000000000);
 
-		waitForSize(51, ourUpdatedObservations);
-		waitForSize(0, ourCreatedObservations);
+		ourObservationListener.waitForUpdatedSize(51);
+		ourObservationListener.waitForCreatedSize(0);
 		waitForSize(0, ourCreatedPatients);
 		waitForSize(50, ourUpdatedPatients);
 
@@ -252,8 +252,8 @@ public class SubscriptionTriggeringDstu3Test extends BaseResourceProviderDstu3Te
 			ourClient.update().resource(o).execute();
 		}
 
-		waitForSize(50, ourUpdatedObservations);
-		waitForSize(0, ourCreatedObservations);
+		ourObservationListener.waitForUpdatedSize(50);
+		ourObservationListener.waitForCreatedSize(0);
 		waitForSize(0, ourCreatedPatients);
 		waitForSize(50, ourUpdatedPatients);
 		beforeReset();
@@ -278,8 +278,8 @@ public class SubscriptionTriggeringDstu3Test extends BaseResourceProviderDstu3Te
 		responseValue = response.getParameter().get(0).getValue().primitiveValue();
 		assertThat(responseValue, containsString("Subscription triggering job submitted as JOB ID"));
 
-		waitForSize(10, ourUpdatedObservations);
-		waitForSize(0, ourCreatedObservations);
+		ourObservationListener.waitForUpdatedSize(10);
+		ourObservationListener.waitForCreatedSize(0);
 		waitForSize(0, ourCreatedPatients);
 		waitForSize(16, ourUpdatedPatients);
 
@@ -315,8 +315,8 @@ public class SubscriptionTriggeringDstu3Test extends BaseResourceProviderDstu3Te
 			ourClient.update().resource(o).execute();
 		}
 
-		waitForSize(20, ourUpdatedObservations);
-		waitForSize(0, ourCreatedObservations);
+		ourObservationListener.waitForUpdatedSize(20);
+		ourObservationListener.waitForCreatedSize(0);
 		waitForSize(0, ourCreatedPatients);
 		waitForSize(0, ourUpdatedPatients);
 		beforeReset();
@@ -332,8 +332,8 @@ public class SubscriptionTriggeringDstu3Test extends BaseResourceProviderDstu3Te
 		String responseValue = response.getParameter().get(0).getValue().primitiveValue();
 		assertThat(responseValue, containsString("Subscription triggering job submitted as JOB ID"));
 
-		waitForSize(20, ourUpdatedObservations);
-		waitForSize(0, ourCreatedObservations);
+		ourObservationListener.waitForUpdatedSize(20);
+		ourObservationListener.waitForCreatedSize(0);
 		waitForSize(0, ourCreatedPatients);
 		waitForSize(0, ourUpdatedPatients);
 
@@ -354,9 +354,9 @@ public class SubscriptionTriggeringDstu3Test extends BaseResourceProviderDstu3Te
 
 		// Should see 1 subscription notification
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(1, ourUpdatedObservations);
-		assertEquals(Constants.CT_FHIR_JSON_NEW, ourContentTypes.get(0));
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(1);
+		assertEquals(Constants.CT_FHIR_JSON_NEW, ourObservationListener.getContentType(0));
 
 		Parameters response = ourClient
 			.operation()
@@ -369,8 +369,8 @@ public class SubscriptionTriggeringDstu3Test extends BaseResourceProviderDstu3Te
 		assertThat(responseValue, containsString("Subscription triggering job submitted as JOB ID"));
 
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(1, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(1);
 
 	}
 
@@ -382,31 +382,6 @@ public class SubscriptionTriggeringDstu3Test extends BaseResourceProviderDstu3Te
 
 	private void waitForQueueToDrain() throws InterruptedException {
 		mySubscriptionTestUtil.waitForQueueToDrain();
-	}
-
-	public static class ObservationListener implements IResourceProvider {
-
-		@Create
-		public MethodOutcome create(@ResourceParam Observation theObservation, HttpServletRequest theRequest) {
-			ourLog.info("Received Listener Create");
-			ourContentTypes.add(theRequest.getHeader(Constants.HEADER_CONTENT_TYPE).replaceAll(";.*", ""));
-			ourCreatedObservations.add(theObservation);
-			return new MethodOutcome(new IdType("Observation/1"), true);
-		}
-
-		@Override
-		public Class<? extends IBaseResource> getResourceType() {
-			return Observation.class;
-		}
-
-		@Update
-		public MethodOutcome update(@ResourceParam Observation theObservation, HttpServletRequest theRequest) {
-			ourUpdatedObservations.add(theObservation);
-			ourContentTypes.add(theRequest.getHeader(Constants.HEADER_CONTENT_TYPE).replaceAll(";.*", ""));
-			ourLog.info("Received Listener Update (now have {} updates)", ourUpdatedObservations.size());
-			return new MethodOutcome(new IdType("Observation/1"), false);
-		}
-
 	}
 
 	public static class PatientListener implements IResourceProvider {
@@ -440,9 +415,9 @@ public class SubscriptionTriggeringDstu3Test extends BaseResourceProviderDstu3Te
 		ourListenerRestServer = new RestfulServer(FhirContext.forDstu3());
 		ourListenerServerBase = "http://localhost:" + ourListenerPort + "/fhir/context";
 
-		ObservationListener obsListener = new ObservationListener();
+		ourObservationListener = new ObservationListener(Observation.class);
 		PatientListener ptListener = new PatientListener();
-		ourListenerRestServer.setResourceProviders(obsListener, ptListener);
+		ourListenerRestServer.setResourceProviders(ourObservationListener, ptListener);
 
 		ourListenerServer = new Server(ourListenerPort);
 

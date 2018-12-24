@@ -4,6 +4,7 @@ package ca.uhn.fhir.jpa.subscription.resthook;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.jpa.dao.DaoConfig;
 import ca.uhn.fhir.jpa.provider.dstu3.BaseResourceProviderDstu3Test;
+import ca.uhn.fhir.jpa.subscription.ObservationListener;
 import ca.uhn.fhir.jpa.subscription.SubscriptionTestUtil;
 import ca.uhn.fhir.rest.annotation.Create;
 import ca.uhn.fhir.rest.annotation.ResourceParam;
@@ -38,14 +39,12 @@ import static org.junit.Assert.fail;
 public class RestHookTestDstu3Test extends BaseResourceProviderDstu3Test {
 
 	private static final org.slf4j.Logger ourLog = org.slf4j.LoggerFactory.getLogger(RestHookTestDstu3Test.class);
-	private static List<Observation> ourCreatedObservations = Collections.synchronizedList(Lists.newArrayList());
 	private static int ourListenerPort;
 	private static RestfulServer ourListenerRestServer;
 	private static Server ourListenerServer;
 	private static String ourListenerServerBase;
-	private static List<Observation> ourUpdatedObservations = Collections.synchronizedList(Lists.newArrayList());
-	private static List<String> ourContentTypes = Collections.synchronizedList(new ArrayList<>());
 	private List<IIdType> mySubscriptionIds = Collections.synchronizedList(new ArrayList<>());
+	private static ObservationListener ourObservationListener;
 
 	@Autowired
 	private SubscriptionTestUtil mySubscriptionTestUtil;
@@ -54,7 +53,7 @@ public class RestHookTestDstu3Test extends BaseResourceProviderDstu3Test {
 	public void afterUnregisterRestHookListener() {
 		ourLog.info("**** Starting @After *****");
 
-		for (IIdType next : mySubscriptionIds){
+		for (IIdType next : mySubscriptionIds) {
 			ourClient.delete().resourceById(next).execute();
 		}
 		mySubscriptionIds.clear();
@@ -76,9 +75,7 @@ public class RestHookTestDstu3Test extends BaseResourceProviderDstu3Test {
 
 	@Before
 	public void beforeReset() {
-		ourCreatedObservations.clear();
-		ourUpdatedObservations.clear();
-		ourContentTypes.clear();
+		ourObservationListener.clear();
 	}
 
 	private Subscription createSubscription(String theCriteria, String thePayload, String theEndpoint) throws InterruptedException {
@@ -135,11 +132,11 @@ public class RestHookTestDstu3Test extends BaseResourceProviderDstu3Test {
 
 		// Should see 1 subscription notification
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(1, ourUpdatedObservations);
-		assertEquals(Constants.CT_FHIR_JSON_NEW, ourContentTypes.get(0));
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(1);
+		assertEquals(Constants.CT_FHIR_JSON_NEW, ourObservationListener.getContentType(0));
 	}
-	
+
 	@Test
 	public void testRestHookSubscriptionApplicationJson() throws Exception {
 		String payload = "application/json";
@@ -155,9 +152,9 @@ public class RestHookTestDstu3Test extends BaseResourceProviderDstu3Test {
 
 		// Should see 1 subscription notification
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(1, ourUpdatedObservations);
-		assertEquals(Constants.CT_FHIR_JSON_NEW, ourContentTypes.get(0));
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(1);
+		assertEquals(Constants.CT_FHIR_JSON_NEW, ourObservationListener.getContentType(0));
 
 		// Modify subscription 2 to also match
 		Subscription subscriptionTemp = ourClient.read(Subscription.class, subscription2.getId());
@@ -171,8 +168,8 @@ public class RestHookTestDstu3Test extends BaseResourceProviderDstu3Test {
 
 		// Should see one subscription notification
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(3, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(3);
 
 		ourClient.delete().resourceById(new IdType("Subscription/" + subscription2.getId())).execute();
 		waitForQueueToDrain();
@@ -181,8 +178,8 @@ public class RestHookTestDstu3Test extends BaseResourceProviderDstu3Test {
 
 		// Should see only one subscription notification
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(4, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(4);
 
 		Observation observation3 = ourClient.read(Observation.class, observationTemp3.getId());
 		CodeableConcept codeableConcept = new CodeableConcept();
@@ -194,8 +191,8 @@ public class RestHookTestDstu3Test extends BaseResourceProviderDstu3Test {
 
 		// Should see no subscription notification
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(4, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(4);
 
 		Observation observation3a = ourClient.read(Observation.class, observationTemp3.getId());
 
@@ -208,8 +205,8 @@ public class RestHookTestDstu3Test extends BaseResourceProviderDstu3Test {
 
 		// Should see only one subscription notification
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(5, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(5);
 
 		Assert.assertFalse(subscription1.getId().equals(subscription2.getId()));
 		Assert.assertFalse(observation1.getId().isEmpty());
@@ -232,9 +229,9 @@ public class RestHookTestDstu3Test extends BaseResourceProviderDstu3Test {
 
 		// Should see 1 subscription notification
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(1, ourUpdatedObservations);
-		assertEquals(Constants.CT_FHIR_XML_NEW, ourContentTypes.get(0));
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(1);
+		assertEquals(Constants.CT_FHIR_XML_NEW, ourObservationListener.getContentType(0));
 
 		// Modify subscription 2 to also match
 		Subscription subscriptionTemp = ourClient.read(Subscription.class, subscription2.getId());
@@ -249,8 +246,8 @@ public class RestHookTestDstu3Test extends BaseResourceProviderDstu3Test {
 
 		// Should see two subscription notifications
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(3, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(3);
 
 		ourClient.delete().resourceById(new IdType("Subscription/" + subscription2.getId())).execute();
 		waitForQueueToDrain();
@@ -261,8 +258,8 @@ public class RestHookTestDstu3Test extends BaseResourceProviderDstu3Test {
 
 		// Should see only one subscription notification
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(4, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(4);
 
 		Observation observation3 = ourClient.read(Observation.class, observationTemp3.getId());
 		CodeableConcept codeableConcept = new CodeableConcept();
@@ -274,8 +271,8 @@ public class RestHookTestDstu3Test extends BaseResourceProviderDstu3Test {
 
 		// Should see no subscription notification
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(4, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(4);
 
 		Observation observation3a = ourClient.read(Observation.class, observationTemp3.getId());
 
@@ -288,8 +285,8 @@ public class RestHookTestDstu3Test extends BaseResourceProviderDstu3Test {
 
 		// Should see only one subscription notification
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(5, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(5);
 
 		Assert.assertFalse(subscription1.getId().equals(subscription2.getId()));
 		Assert.assertFalse(observation1.getId().isEmpty());
@@ -311,9 +308,9 @@ public class RestHookTestDstu3Test extends BaseResourceProviderDstu3Test {
 
 		// Should see 1 subscription notification
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(1, ourUpdatedObservations);
-		assertEquals(Constants.CT_FHIR_XML_NEW, ourContentTypes.get(0));
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(1);
+		assertEquals(Constants.CT_FHIR_XML_NEW, ourObservationListener.getContentType(0));
 	}
 
 	@Test
@@ -331,8 +328,8 @@ public class RestHookTestDstu3Test extends BaseResourceProviderDstu3Test {
 
 		// Should see 1 subscription notification, but no payload
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(0, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(0);
 	}
 
 	@Test
@@ -359,8 +356,8 @@ public class RestHookTestDstu3Test extends BaseResourceProviderDstu3Test {
 		ourListenerRestServer = new RestfulServer(FhirContext.forDstu3());
 		ourListenerServerBase = "http://localhost:" + ourListenerPort + "/fhir/context";
 
-		ObservationListener obsListener = new ObservationListener();
-		ourListenerRestServer.setResourceProviders(obsListener);
+		ourObservationListener = new ObservationListener(Observation.class);
+		ourListenerRestServer.setResourceProviders(ourObservationListener);
 
 		ourListenerServer = new Server(ourListenerPort);
 
@@ -379,30 +376,5 @@ public class RestHookTestDstu3Test extends BaseResourceProviderDstu3Test {
 	public static void stopListenerServer() throws Exception {
 		ourListenerServer.stop();
 	}
-
-	public static class ObservationListener implements IResourceProvider {
-
-		@Create
-		public MethodOutcome create(@ResourceParam Observation theObservation, HttpServletRequest theRequest) {
-			ourLog.info("Received Listener Create");
-			ourContentTypes.add(theRequest.getHeader(Constants.HEADER_CONTENT_TYPE).replaceAll(";.*", ""));
-			ourCreatedObservations.add(theObservation);
-			return new MethodOutcome(new IdType("Observation/1"), true);
-		}
-
-		@Override
-		public Class<? extends IBaseResource> getResourceType() {
-			return Observation.class;
-		}
-
-		@Update
-		public MethodOutcome update(@ResourceParam Observation theObservation, HttpServletRequest theRequest) {
-			ourUpdatedObservations.add(theObservation);
-			ourContentTypes.add(theRequest.getHeader(Constants.HEADER_CONTENT_TYPE).replaceAll(";.*", ""));
-			ourLog.info("Received Listener Update (now have {} updates)", ourUpdatedObservations.size());
-			return new MethodOutcome(new IdType("Observation/1"), false);
-		}
-
-	}
-
 }
+

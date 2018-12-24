@@ -54,7 +54,7 @@ public class FhirClientSearchParamProviderTest extends BaseSubscriptionsR4Test {
 			MethodOutcome methodOutcome = ourClient.create().resource(observation).execute();
 			assertEquals(true, methodOutcome.getCreated());
 			waitForQueueToDrain();
-			waitForSize(1, ourUpdatedObservations);
+			ourObservationListener.waitForUpdatedSize(1);
 		}
 		{
 			Observation observation = new Observation();
@@ -62,14 +62,14 @@ public class FhirClientSearchParamProviderTest extends BaseSubscriptionsR4Test {
 			MethodOutcome methodOutcome = ourClient.create().resource(observation).execute();
 			assertEquals(true, methodOutcome.getCreated());
 			waitForQueueToDrain();
-			waitForSize(2, ourUpdatedObservations);
+			ourObservationListener.waitForUpdatedSize(2);
 		}
 		{
 			Observation observation = new Observation();
 			MethodOutcome methodOutcome = ourClient.create().resource(observation).execute();
 			assertEquals(true, methodOutcome.getCreated());
 			waitForQueueToDrain();
-			waitForSize(2, ourUpdatedObservations);
+			ourObservationListener.waitForUpdatedSize(2);
 		}
 		{
 			Observation observation = new Observation();
@@ -77,7 +77,7 @@ public class FhirClientSearchParamProviderTest extends BaseSubscriptionsR4Test {
 			MethodOutcome methodOutcome = ourClient.create().resource(observation).execute();
 			assertEquals(true, methodOutcome.getCreated());
 			waitForQueueToDrain();
-			waitForSize(2, ourUpdatedObservations);
+			ourObservationListener.waitForUpdatedSize(2);
 		}
 	}
 }

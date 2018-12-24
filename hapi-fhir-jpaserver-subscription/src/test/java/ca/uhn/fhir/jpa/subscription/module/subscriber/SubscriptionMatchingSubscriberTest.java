@@ -63,7 +63,7 @@ public class SubscriptionMatchingSubscriberTest extends BaseBlockingQueueSubscri
 
 		sendObservation(code, "SNOMED-CT");
 
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(0, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(0);
 	}
 }

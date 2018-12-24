@@ -2,6 +2,7 @@ package ca.uhn.fhir.jpa.subscription.resthook;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.jpa.provider.r4.BaseResourceProviderR4Test;
+import ca.uhn.fhir.jpa.subscription.ObservationListener;
 import ca.uhn.fhir.jpa.subscription.SubscriptionActivatingInterceptor;
 import ca.uhn.fhir.jpa.subscription.SubscriptionTestUtil;
 import ca.uhn.fhir.rest.annotation.ResourceParam;
@@ -37,9 +38,7 @@ public class RestHookActivatesPreExistingSubscriptionsR4Test extends BaseResourc
 	private static RestfulServer ourListenerRestServer;
 	private static String ourListenerServerBase;
 	private static Server ourListenerServer;
-	private static List<Observation> ourUpdatedObservations = Collections.synchronizedList(Lists.newArrayList());
-	private static List<String> ourContentTypes = Collections.synchronizedList(new ArrayList<>());
-	private static List<String> ourHeaders = Collections.synchronizedList(new ArrayList<>());
+	private static ObservationListener ourObservationListener;
 
 	@Autowired
 	private SubscriptionTestUtil mySubscriptionTestUtil;
@@ -115,43 +114,12 @@ public class RestHookActivatesPreExistingSubscriptionsR4Test extends BaseResourc
 
 		// Should see 1 subscription notification
 		waitForQueueToDrain();
-		waitForSize(1, ourUpdatedObservations);
-		assertEquals(Constants.CT_FHIR_JSON_NEW, ourContentTypes.get(0));
+		ourObservationListener.waitForUpdatedSize(1);
+		assertEquals(Constants.CT_FHIR_JSON_NEW, ourObservationListener.getContentType(0));
 	}
 
 	private void waitForQueueToDrain() throws InterruptedException {
 			mySubscriptionTestUtil.waitForQueueToDrain();
-	}
-
-	public static class ObservationListener implements IResourceProvider {
-
-
-		private void extractHeaders(HttpServletRequest theRequest) {
-			java.util.Enumeration<String> headerNamesEnum = theRequest.getHeaderNames();
-			while (headerNamesEnum.hasMoreElements()) {
-				String nextName = headerNamesEnum.nextElement();
-				Enumeration<String> valueEnum = theRequest.getHeaders(nextName);
-				while (valueEnum.hasMoreElements()) {
-					String nextValue = valueEnum.nextElement();
-					ourHeaders.add(nextName + ": " + nextValue);
-				}
-			}
-		}
-
-		@Override
-		public Class<? extends IBaseResource> getResourceType() {
-			return Observation.class;
-		}
-
-		@Update
-		public MethodOutcome update(@ResourceParam Observation theObservation, HttpServletRequest theRequest) {
-			ourLog.info("Received Listener Update");
-			ourUpdatedObservations.add(theObservation);
-			ourContentTypes.add(theRequest.getHeader(Constants.HEADER_CONTENT_TYPE).replaceAll(";.*", ""));
-			extractHeaders(theRequest);
-			return new MethodOutcome(new IdType("Observation/1"), false);
-		}
-
 	}
 
 	@BeforeClass
@@ -160,8 +128,8 @@ public class RestHookActivatesPreExistingSubscriptionsR4Test extends BaseResourc
 		ourListenerRestServer = new RestfulServer(FhirContext.forR4());
 		ourListenerServerBase = "http://localhost:" + ourListenerPort + "/fhir/context";
 
-		ObservationListener obsListener = new ObservationListener();
-		ourListenerRestServer.setResourceProviders(obsListener);
+		ourObservationListener = new ObservationListener(Observation.class);
+		ourListenerRestServer.setResourceProviders(ourObservationListener);
 
 		ourListenerServer = new Server(ourListenerPort);
 

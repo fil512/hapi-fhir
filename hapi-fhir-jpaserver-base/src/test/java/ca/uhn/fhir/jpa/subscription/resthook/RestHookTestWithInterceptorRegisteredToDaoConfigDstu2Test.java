@@ -3,6 +3,7 @@ package ca.uhn.fhir.jpa.subscription.resthook;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.jpa.dao.DaoConfig;
 import ca.uhn.fhir.jpa.provider.BaseResourceProviderDstu2Test;
+import ca.uhn.fhir.jpa.subscription.ObservationListener;
 import ca.uhn.fhir.jpa.subscription.SubscriptionTestUtil;
 import ca.uhn.fhir.model.dstu2.composite.CodeableConceptDt;
 import ca.uhn.fhir.model.dstu2.composite.CodingDt;
@@ -37,12 +38,11 @@ import java.util.List;
 public class RestHookTestWithInterceptorRegisteredToDaoConfigDstu2Test extends BaseResourceProviderDstu2Test {
 
 	private static final org.slf4j.Logger ourLog = org.slf4j.LoggerFactory.getLogger(RestHookTestWithInterceptorRegisteredToDaoConfigDstu2Test.class);
-	private static List<Observation> ourCreatedObservations = Collections.synchronizedList(Lists.newArrayList());
 	private static int ourListenerPort;
 	private static RestfulServer ourListenerRestServer;
 	private static Server ourListenerServer;
 	private static String ourListenerServerBase;
-	private static List<Observation> ourUpdatedObservations = Collections.synchronizedList(Lists.newArrayList());
+	private static ObservationListener ourObservationListener;
 
 	@Autowired
 	private SubscriptionTestUtil mySubscriptionTestUtil;
@@ -66,8 +66,7 @@ public class RestHookTestWithInterceptorRegisteredToDaoConfigDstu2Test extends B
 
 	@Before
 	public void beforeReset() {
-		ourCreatedObservations.clear();
-		ourUpdatedObservations.clear();
+		ourObservationListener.clear();
 
 		mySubscriptionLoader.initSubscriptions();
 	}
@@ -130,8 +129,8 @@ public class RestHookTestWithInterceptorRegisteredToDaoConfigDstu2Test extends B
 
 		// Should see 1 subscription notification
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(1, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(1);
 
 		Subscription subscriptionTemp = ourClient.read(Subscription.class, subscription2.getId());
 		Assert.assertNotNull(subscriptionTemp);
@@ -144,8 +143,8 @@ public class RestHookTestWithInterceptorRegisteredToDaoConfigDstu2Test extends B
 
 		// Should see two subscription notifications
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(3, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(3);
 
 		ourClient.delete().resourceById(new IdDt("Subscription/" + subscription2.getId())).execute();
 
@@ -153,8 +152,8 @@ public class RestHookTestWithInterceptorRegisteredToDaoConfigDstu2Test extends B
 
 		// Should see only one subscription notification
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(4, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(4);
 
 		Observation observation3 = ourClient.read(Observation.class, observationTemp3.getId());
 		CodeableConceptDt codeableConcept = new CodeableConceptDt();
@@ -166,8 +165,8 @@ public class RestHookTestWithInterceptorRegisteredToDaoConfigDstu2Test extends B
 
 		// Should see no subscription notification
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(4, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(4);
 
 		Observation observation3a = ourClient.read(Observation.class, observationTemp3.getId());
 
@@ -180,8 +179,8 @@ public class RestHookTestWithInterceptorRegisteredToDaoConfigDstu2Test extends B
 
 		// Should see only one subscription notification
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(5, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(5);
 
 		Assert.assertFalse(subscription1.getId().equals(subscription2.getId()));
 		Assert.assertFalse(observation1.getId().isEmpty());
@@ -203,8 +202,8 @@ public class RestHookTestWithInterceptorRegisteredToDaoConfigDstu2Test extends B
 
 		// Should see 1 subscription notification
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(1, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(1);
 
 		Subscription subscriptionTemp = ourClient.read(Subscription.class, subscription2.getId());
 		Assert.assertNotNull(subscriptionTemp);
@@ -217,8 +216,8 @@ public class RestHookTestWithInterceptorRegisteredToDaoConfigDstu2Test extends B
 
 		// Should see two subscription notifications
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(3, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(3);
 
 		ourClient.delete().resourceById(new IdDt("Subscription/" + subscription2.getId())).execute();
 
@@ -226,8 +225,8 @@ public class RestHookTestWithInterceptorRegisteredToDaoConfigDstu2Test extends B
 
 		// Should see only one subscription notification
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(4, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(4);
 
 		Observation observation3 = ourClient.read(Observation.class, observationTemp3.getId());
 		CodeableConceptDt codeableConcept = new CodeableConceptDt();
@@ -239,8 +238,8 @@ public class RestHookTestWithInterceptorRegisteredToDaoConfigDstu2Test extends B
 
 		// Should see no subscription notification
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(4, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(4);
 
 		Observation observation3a = ourClient.read(Observation.class, observationTemp3.getId());
 
@@ -253,35 +252,12 @@ public class RestHookTestWithInterceptorRegisteredToDaoConfigDstu2Test extends B
 
 		// Should see only one subscription notification
 		waitForQueueToDrain();
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(5, ourUpdatedObservations);
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(5);
 
 		Assert.assertFalse(subscription1.getId().equals(subscription2.getId()));
 		Assert.assertFalse(observation1.getId().isEmpty());
 		Assert.assertFalse(observation2.getId().isEmpty());
-	}
-
-	public static class ObservationListener implements IResourceProvider {
-
-		@Create
-		public MethodOutcome create(@ResourceParam Observation theObservation) {
-			ourLog.info("Received Listener Create");
-			ourCreatedObservations.add(theObservation);
-			return new MethodOutcome(new IdDt("Observation/1"), true);
-		}
-
-		@Override
-		public Class<? extends IBaseResource> getResourceType() {
-			return Observation.class;
-		}
-
-		@Update
-		public MethodOutcome update(@ResourceParam Observation theObservation) {
-			ourLog.info("Received Listener Update");
-			ourUpdatedObservations.add(theObservation);
-			return new MethodOutcome(new IdDt("Observation/1"), false);
-		}
-
 	}
 
 	@BeforeClass
@@ -290,8 +266,8 @@ public class RestHookTestWithInterceptorRegisteredToDaoConfigDstu2Test extends B
 		ourListenerRestServer = new RestfulServer(FhirContext.forDstu2());
 		ourListenerServerBase = "http://localhost:" + ourListenerPort + "/fhir/context";
 
-		ObservationListener obsListener = new ObservationListener();
-		ourListenerRestServer.setResourceProviders(obsListener);
+		ourObservationListener = new ObservationListener(Observation.class);
+		ourListenerRestServer.setResourceProviders(ourObservationListener);
 
 		ourListenerServer = new Server(ourListenerPort);
 

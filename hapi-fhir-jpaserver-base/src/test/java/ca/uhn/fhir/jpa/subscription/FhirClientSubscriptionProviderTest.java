@@ -54,8 +54,8 @@ public class FhirClientSubscriptionProviderTest extends BaseSubscriptionsR4Test 
 
 		sendObservation(myCode, "SNOMED-CT");
 
-		waitForSize(0, ourCreatedObservations);
-		waitForSize(1, ourUpdatedObservations);
-		assertEquals(Constants.CT_FHIR_JSON_NEW, ourContentTypes.get(0));
+		ourObservationListener.waitForCreatedSize(0);
+		ourObservationListener.waitForUpdatedSize(1);
+		assertEquals(Constants.CT_FHIR_JSON_NEW, ourObservationListener.getContentType(0));
 	}
 }

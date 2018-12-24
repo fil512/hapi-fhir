@@ -36,11 +36,11 @@ import java.util.List;
 public abstract class BaseSubscriptionsR4Test extends BaseResourceProviderR4Test {
 	private static final org.slf4j.Logger ourLog = org.slf4j.LoggerFactory.getLogger(BaseSubscriptionsR4Test.class);
 
+	protected static ObservationListener<Observation> ourObservationListener;
 	private static int ourListenerPort;
 	private static RestfulServer ourListenerRestServer;
 	private static Server ourListenerServer;
-	protected static List<String> ourContentTypes = Collections.synchronizedList(new ArrayList<>());
-	protected static List<String> ourHeaders = Collections.synchronizedList(new ArrayList<>());
+
 	private static SingleQueryCountHolder ourCountHolder;
 
 	@Autowired
@@ -52,8 +52,6 @@ public abstract class BaseSubscriptionsR4Test extends BaseResourceProviderR4Test
 
 	protected CountingInterceptor myCountingInterceptor;
 
-	protected static List<Observation> ourCreatedObservations = Collections.synchronizedList(Lists.newArrayList());
-	protected static List<Observation> ourUpdatedObservations = Collections.synchronizedList(Lists.newArrayList());
 	protected static String ourListenerServerBase;
 
 	protected List<IIdType> mySubscriptionIds = Collections.synchronizedList(new ArrayList<>());
@@ -87,10 +85,9 @@ public abstract class BaseSubscriptionsR4Test extends BaseResourceProviderR4Test
 
 	@Before
 	public void beforeReset() throws Exception {
-		ourCreatedObservations.clear();
-		ourUpdatedObservations.clear();
-		ourContentTypes.clear();
-		ourHeaders.clear();
+		if (ourObservationListener != null) {
+			ourObservationListener.clear();
+		}
 
 		// Delete all Subscriptions
 		Bundle allSubscriptions = ourClient.search().forResource(Subscription.class).returnBundle(Bundle.class).execute();
@@ -213,8 +210,8 @@ public abstract class BaseSubscriptionsR4Test extends BaseResourceProviderR4Test
 		ourListenerRestServer = new RestfulServer(FhirContext.forR4());
 		ourListenerServerBase = "http://localhost:" + ourListenerPort + "/fhir/context";
 
-		ObservationListener obsListener = new ObservationListener();
-		ourListenerRestServer.setResourceProviders(obsListener);
+		ourObservationListener = new ObservationListener(Observation.class);
+		ourListenerRestServer.setResourceProviders(ourObservationListener);
 
 		ourListenerServer = new Server(ourListenerPort);
 
