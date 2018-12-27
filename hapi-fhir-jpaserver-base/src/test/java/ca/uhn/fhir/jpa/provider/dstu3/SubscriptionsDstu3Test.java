@@ -1,6 +1,7 @@
 package ca.uhn.fhir.jpa.provider.dstu3;
 
 import ca.uhn.fhir.jpa.util.SubscriptionsRequireManualActivationInterceptorDstu3;
+import ca.uhn.fhir.rest.api.Constants;
 import ca.uhn.fhir.rest.api.EncodingEnum;
 import ca.uhn.fhir.rest.server.exceptions.UnprocessableEntityException;
 import ca.uhn.fhir.util.TestUtil;
@@ -53,7 +54,7 @@ public class SubscriptionsDstu3Test extends BaseResourceProviderDstu3Test {
 	public void testCreateInvalidNoStatus() {
 		Subscription subs = new Subscription();
 		subs.getChannel().setType(SubscriptionChannelType.RESTHOOK);
-		subs.getChannel().setPayload("application/fhir+json");
+		subs.getChannel().setPayload(Constants.CT_FHIR_JSON_NEW);
 		subs.getChannel().setEndpoint("http://localhost:8888");
 		subs.setCriteria("Observation?identifier=123");
 		try {
@@ -79,7 +80,7 @@ public class SubscriptionsDstu3Test extends BaseResourceProviderDstu3Test {
 	public void testCreateInvalidWrongStatus() {
 		Subscription subs = new Subscription();
 		subs.getChannel().setType(SubscriptionChannelType.RESTHOOK);
-		subs.getChannel().setPayload("application/fhir+json");
+		subs.getChannel().setPayload(Constants.CT_FHIR_JSON_NEW);
 		subs.getChannel().setEndpoint("http://foo");
 		subs.setStatus(SubscriptionStatus.ACTIVE);
 		subs.setCriteria("Observation?identifier=123");
@@ -104,7 +105,7 @@ public class SubscriptionsDstu3Test extends BaseResourceProviderDstu3Test {
 	public void testUpdateFails() {
 		Subscription subs = new Subscription();
 		subs.getChannel().setType(SubscriptionChannelType.RESTHOOK);
-		subs.getChannel().setPayload("application/fhir+json");
+		subs.getChannel().setPayload(Constants.CT_FHIR_JSON_NEW);
 		subs.getChannel().setEndpoint("http://localhost:8888");
 		subs.setStatus(SubscriptionStatus.REQUESTED);
 		subs.setCriteria("Observation?identifier=123");
@@ -136,7 +137,7 @@ public class SubscriptionsDstu3Test extends BaseResourceProviderDstu3Test {
 	public void testUpdateToInvalidStatus() {
 		Subscription subs = new Subscription();
 		subs.getChannel().setType(SubscriptionChannelType.RESTHOOK);
-		subs.getChannel().setPayload("application/fhir+json");
+		subs.getChannel().setPayload(Constants.CT_FHIR_JSON_NEW);
 		subs.getChannel().setEndpoint("http://localhost:8888");
 		subs.setCriteria("Observation?identifier=123");
 		subs.setStatus(SubscriptionStatus.REQUESTED);

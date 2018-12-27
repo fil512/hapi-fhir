@@ -2,32 +2,22 @@ package ca.uhn.fhir.jpa.subscription.resthook;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.jpa.provider.r4.BaseResourceProviderR4Test;
+import ca.uhn.fhir.jpa.subscription.LatchedService;
 import ca.uhn.fhir.jpa.subscription.ObservationListener;
 import ca.uhn.fhir.jpa.subscription.SubscriptionActivatingInterceptor;
 import ca.uhn.fhir.jpa.subscription.SubscriptionTestUtil;
-import ca.uhn.fhir.rest.annotation.ResourceParam;
-import ca.uhn.fhir.rest.annotation.Update;
 import ca.uhn.fhir.rest.api.Constants;
 import ca.uhn.fhir.rest.api.MethodOutcome;
-import ca.uhn.fhir.rest.server.IResourceProvider;
 import ca.uhn.fhir.rest.server.RestfulServer;
 import ca.uhn.fhir.util.PortUtil;
-import com.google.common.collect.Lists;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.*;
 import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -39,7 +29,6 @@ public class RestHookActivatesPreExistingSubscriptionsR4Test extends BaseResourc
 	private static String ourListenerServerBase;
 	private static Server ourListenerServer;
 	private static ObservationListener ourObservationListener;
-
 	@Autowired
 	private SubscriptionTestUtil mySubscriptionTestUtil;
 
@@ -59,7 +48,6 @@ public class RestHookActivatesPreExistingSubscriptionsR4Test extends BaseResourc
 		mySubscriptionLoader.initSubscriptions();
 	}
 
-
 	private Subscription createSubscription(String theCriteria, String thePayload, String theEndpoint) throws InterruptedException {
 		Subscription subscription = new Subscription();
 		subscription.setReason("Monitor new neonatal function (note, age will be determined by the monitor)");
@@ -70,11 +58,9 @@ public class RestHookActivatesPreExistingSubscriptionsR4Test extends BaseResourc
 		channel.setType(Subscription.SubscriptionChannelType.RESTHOOK);
 		channel.setPayload(thePayload);
 		channel.setEndpoint(theEndpoint);
-
 		MethodOutcome methodOutcome = ourClient.create().resource(subscription).execute();
 		subscription.setId(methodOutcome.getId().getIdPart());
 
-		waitForQueueToDrain();
 		return subscription;
 	}
 
@@ -98,28 +84,23 @@ public class RestHookActivatesPreExistingSubscriptionsR4Test extends BaseResourc
 
 	@Test
 	public void testSubscriptionInterceptorRegisteredAfterSubscriptionCreated() throws Exception {
-		String payload = "application/fhir+json";
-
+		String payload = Constants.CT_FHIR_JSON_NEW;
 		String code = "1000000050";
 		String criteria1 = "Observation?code=SNOMED-CT|" + code + "&_format=xml";
 		String criteria2 = "Observation?code=SNOMED-CT|" + code + "111&_format=xml";
 
+		// FIXME KHS what did I change that is causing this to fail?
 		createSubscription(criteria1, payload, ourListenerServerBase);
 		createSubscription(criteria2, payload, ourListenerServerBase);
 
 		mySubscriptionTestUtil.registerRestHookInterceptor();
 		mySubscriptionLoader.initSubscriptions();
-
+		ourObservationListener.setExpectedCount(1);
 		sendObservation(code, "SNOMED-CT");
 
 		// Should see 1 subscription notification
-		waitForQueueToDrain();
-		ourObservationListener.waitForUpdatedSize(1);
+		ourObservationListener.awaitExpected();
 		assertEquals(Constants.CT_FHIR_JSON_NEW, ourObservationListener.getContentType(0));
-	}
-
-	private void waitForQueueToDrain() throws InterruptedException {
-			mySubscriptionTestUtil.waitForQueueToDrain();
 	}
 
 	@BeforeClass

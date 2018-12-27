@@ -31,6 +31,8 @@ package org.hl7.fhir.instance.client;
 */
 
 
+import ca.uhn.fhir.rest.api.Constants;
+
 /**
  * Enumeration for preferred AtomFeed resource formats.
  * 
@@ -39,7 +41,7 @@ package org.hl7.fhir.instance.client;
  */
 public enum FeedFormat {
     FEED_XML("application/atom+xml"),
-    FEED_JSON("application/fhir+json");
+    FEED_JSON(Constants.CT_FHIR_JSON_NEW);
 
 	
 	private String header;

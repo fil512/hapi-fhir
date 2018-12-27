@@ -13,19 +13,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
-import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 
-import static ca.uhn.fhir.jpa.subscription.module.BaseSubscriptionDstu3Test.waitForSize;
-
-public class ObservationListener<T extends IBaseResource> implements IResourceProvider {
+public class ObservationListener<T extends IBaseResource> extends LatchedService implements IResourceProvider {
 	private static final Logger ourLog = LoggerFactory.getLogger(ObservationListener.class);
-
-	private CountDownLatch myCountdownLatch;
 
 	private final List<String> myContentTypes = Collections.synchronizedList(new ArrayList<>());
 	private final List<String> myHeaders = Collections.synchronizedList(new ArrayList<>());
@@ -67,12 +61,14 @@ public class ObservationListener<T extends IBaseResource> implements IResourcePr
 
 	@Update
 	public MethodOutcome update(@ResourceParam T theObservation, HttpServletRequest theRequest) {
-		ourLog.info("Received Listener Update");
+		ourLog.info("Received Listener Update Observation {}", theObservation.getIdElement().getIdPart());
 		myUpdatedObservations.add(theObservation);
-		myContentTypes.add(theRequest.getHeader(Constants.HEADER_CONTENT_TYPE).replaceAll(";.*", ""));
+		String contentType = theRequest.getHeader(Constants.HEADER_CONTENT_TYPE).replaceAll(";.*", "");
+		myContentTypes.add(contentType);
 		extractHeaders(theRequest);
+
 		countdown();
-		return new MethodOutcome(new IdDt("Observation/1"), false);
+		return new MethodOutcome(theObservation.getIdElement(), false);
 	}
 
 	public void clear() {
@@ -80,13 +76,6 @@ public class ObservationListener<T extends IBaseResource> implements IResourcePr
 		myUpdatedObservations.clear();
 		myContentTypes.clear();
 		myHeaders.clear();
-	}
-
-	public void waitForCreatedSize(int size) {
-		waitForSize(size, myCreatedObservations);
-	}
-	public void waitForUpdatedSize(int size) {
-		waitForSize(size, myUpdatedObservations);
 	}
 
 	public String getContentType(int index) {
@@ -99,16 +88,5 @@ public class ObservationListener<T extends IBaseResource> implements IResourcePr
 
 	public int size() {
 		return myUpdatedObservations.size();
-	}
-
-	private void countdown() {
-		if (myCountdownLatch != null) {
-			myCountdownLatch.countDown();
-		}
-	}
-
-	public CountDownLatch newCountDownLatch(int count) {
-		myCountdownLatch = new CountDownLatch(count);
-		return myCountdownLatch;
 	}
 }

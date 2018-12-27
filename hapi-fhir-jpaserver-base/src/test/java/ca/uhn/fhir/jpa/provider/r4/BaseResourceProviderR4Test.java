@@ -197,7 +197,7 @@ public abstract class BaseResourceProviderR4Test extends BaseJpaR4Test {
 		}
 		return names;
 	}
-
+// FIXME KHS remove
 	protected void waitForActivatedSubscriptionCount(int theSize) throws Exception {
 		for (int i = 0; ; i++) {
 			if (i == 10) {

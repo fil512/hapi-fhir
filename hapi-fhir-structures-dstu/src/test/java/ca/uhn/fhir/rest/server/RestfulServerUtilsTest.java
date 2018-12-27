@@ -14,10 +14,10 @@ public class RestfulServerUtilsTest {
 
 	@Test
 	public void testAcceptPattern() {
-		Matcher m = RestfulServerUtils.ACCEPT_HEADER_PATTERN.matcher("application/json+fhir");
+		Matcher m = RestfulServerUtils.ACCEPT_HEADER_PATTERN.matcher(Constants.CT_FHIR_JSON);
 		assertTrue(m.find());
-		assertEquals("application/json+fhir", m.group(0));
-		assertEquals("application/json+fhir", m.group(1));
+		assertEquals(Constants.CT_FHIR_JSON, m.group(0));
+		assertEquals(Constants.CT_FHIR_JSON, m.group(1));
 	}
 	
 	@Test
@@ -29,7 +29,7 @@ public class RestfulServerUtilsTest {
 		
 		assertTrue(m.find());
 		assertEquals(" application/json+fhir", m.group(0));
-		assertEquals("application/json+fhir", m.group(1));
+		assertEquals(Constants.CT_FHIR_JSON, m.group(1));
 	}
 	
 	@Test

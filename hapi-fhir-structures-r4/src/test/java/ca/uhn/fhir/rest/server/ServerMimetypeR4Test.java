@@ -261,19 +261,19 @@ public class ServerMimetypeR4Test {
 		ourServlet.setDefaultResponseEncoding(EncodingEnum.XML);
 
 		// None given
-		assertEquals("application/fhir+xml", readAndReturnContentType(null));
+		assertEquals(Constants.CT_FHIR_XML_NEW, readAndReturnContentType(null));
 
 		// Legacy given
-		assertEquals("application/json+fhir", readAndReturnContentType("application/json+fhir"));
+		assertEquals(Constants.CT_FHIR_JSON, readAndReturnContentType(Constants.CT_FHIR_JSON));
 
 		// Everything else JSON
-		assertEquals("application/fhir+json", readAndReturnContentType("application/fhir+json"));
-		assertEquals("application/fhir+json", readAndReturnContentType("application/json"));
-		assertEquals("application/fhir+json", readAndReturnContentType("application/fhir+json,application/json;q=0.9"));
-		assertEquals("application/fhir+json", readAndReturnContentType("json"));
+		assertEquals(Constants.CT_FHIR_JSON_NEW, readAndReturnContentType(Constants.CT_FHIR_JSON_NEW));
+		assertEquals(Constants.CT_FHIR_JSON_NEW, readAndReturnContentType("application/json"));
+		assertEquals(Constants.CT_FHIR_JSON_NEW, readAndReturnContentType("application/fhir+json,application/json;q=0.9"));
+		assertEquals(Constants.CT_FHIR_JSON_NEW, readAndReturnContentType("json"));
 
 		// Invalid
-		assertEquals("application/fhir+xml", readAndReturnContentType("text/plain"));
+		assertEquals(Constants.CT_FHIR_XML_NEW, readAndReturnContentType("text/plain"));
 	}
 
 	/**
@@ -284,19 +284,19 @@ public class ServerMimetypeR4Test {
 		ourServlet.setDefaultResponseEncoding(EncodingEnum.JSON);
 
 		// None given
-		assertEquals("application/fhir+json", readAndReturnContentType(null));
+		assertEquals(Constants.CT_FHIR_JSON_NEW, readAndReturnContentType(null));
 
 		// Legacy given
-		assertEquals("application/xml+fhir", readAndReturnContentType("application/xml+fhir"));
+		assertEquals(Constants.CT_FHIR_XML, readAndReturnContentType(Constants.CT_FHIR_XML));
 
 		// Everything else JSON
-		assertEquals("application/fhir+xml", readAndReturnContentType("application/fhir+xml"));
-		assertEquals("application/fhir+xml", readAndReturnContentType("application/xml"));
-		assertEquals("application/fhir+xml", readAndReturnContentType("application/fhir+xml,application/xml;q=0.9"));
-		assertEquals("application/fhir+xml", readAndReturnContentType("xml"));
+		assertEquals(Constants.CT_FHIR_XML_NEW, readAndReturnContentType(Constants.CT_FHIR_XML_NEW));
+		assertEquals(Constants.CT_FHIR_XML_NEW, readAndReturnContentType("application/xml"));
+		assertEquals(Constants.CT_FHIR_XML_NEW, readAndReturnContentType("application/fhir+xml,application/xml;q=0.9"));
+		assertEquals(Constants.CT_FHIR_XML_NEW, readAndReturnContentType("xml"));
 
 		// Invalid
-		assertEquals("application/fhir+json", readAndReturnContentType("text/plain"));
+		assertEquals(Constants.CT_FHIR_JSON_NEW, readAndReturnContentType("text/plain"));
 	}
 
 	@Test

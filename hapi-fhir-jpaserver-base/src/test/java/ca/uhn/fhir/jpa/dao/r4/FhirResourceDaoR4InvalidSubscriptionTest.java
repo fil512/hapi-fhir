@@ -3,6 +3,7 @@ package ca.uhn.fhir.jpa.dao.r4;
 import ca.uhn.fhir.jpa.dao.BaseHapiFhirDao;
 import ca.uhn.fhir.jpa.dao.DaoConfig;
 import ca.uhn.fhir.jpa.subscription.SubscriptionActivatingInterceptor;
+import ca.uhn.fhir.rest.api.Constants;
 import ca.uhn.fhir.rest.server.exceptions.UnprocessableEntityException;
 import ca.uhn.fhir.util.TestUtil;
 import org.hl7.fhir.instance.model.api.IIdType;
@@ -62,7 +63,7 @@ public class FhirResourceDaoR4InvalidSubscriptionTest extends BaseJpaR4Test {
 		Subscription s = new Subscription();
 		s.setStatus(Subscription.SubscriptionStatus.REQUESTED);
 		s.getChannel().setEndpoint("http://foo");
-		s.getChannel().setPayload("application/fhir+json");
+		s.getChannel().setPayload(Constants.CT_FHIR_JSON_NEW);
 		s.setCriteria("Patient?foo");
 		final IIdType id = mySubscriptionDao.create(s).getId().toUnqualifiedVersionless();
 		assertNotNull(id.getIdPart());
@@ -91,7 +92,7 @@ public class FhirResourceDaoR4InvalidSubscriptionTest extends BaseJpaR4Test {
 		s.setStatus(Subscription.SubscriptionStatus.REQUESTED);
 		s.getChannel().setType(Subscription.SubscriptionChannelType.RESTHOOK);
 		s.getChannel().setEndpoint("http://foo");
-		s.getChannel().setPayload("application/fhir+json");
+		s.getChannel().setPayload(Constants.CT_FHIR_JSON_NEW);
 		s.setCriteria("BLAH");
 		IIdType id = mySubscriptionDao.create(s).getId().toUnqualifiedVersionless();
 		assertNotNull(id.getIdPart());
@@ -109,7 +110,7 @@ public class FhirResourceDaoR4InvalidSubscriptionTest extends BaseJpaR4Test {
 		Subscription s = new Subscription();
 		s.getChannel().setType(Subscription.SubscriptionChannelType.RESTHOOK);
 		s.getChannel().setEndpoint("http://foo");
-		s.getChannel().setPayload("application/fhir+json");
+		s.getChannel().setPayload(Constants.CT_FHIR_JSON_NEW);
 		s.setCriteria("Patient?active=true");
 		IIdType id = mySubscriptionDao.create(s).getId().toUnqualifiedVersionless();
 
@@ -126,7 +127,7 @@ public class FhirResourceDaoR4InvalidSubscriptionTest extends BaseJpaR4Test {
 		Subscription s = new Subscription();
 		s.setStatus(Subscription.SubscriptionStatus.REQUESTED);
 		s.getChannel().setEndpoint("http://foo");
-		s.getChannel().setPayload("application/fhir+json");
+		s.getChannel().setPayload(Constants.CT_FHIR_JSON_NEW);
 		s.setCriteria("Patient?foo");
 		IIdType id = mySubscriptionDao.create(s).getId().toUnqualifiedVersionless();
 		assertNotNull(id.getIdPart());

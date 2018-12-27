@@ -2219,7 +2219,7 @@ public class GenericClientDstu2Test {
 		assertEquals("POST", requestBundle.getEntry().get(0).getRequest().getMethod());
 		assertEquals("PUT", requestBundle.getEntry().get(1).getRequest().getMethod());
 		assertEquals("Patient/2", requestBundle.getEntry().get(1).getRequest().getUrl());
-		assertEquals("application/json+fhir", capt.getAllValues().get(0).getFirstHeader("content-type").getValue().replaceAll(";.*", ""));
+		assertEquals(Constants.CT_FHIR_JSON, capt.getAllValues().get(0).getFirstHeader("content-type").getValue().replaceAll(";.*", ""));
 
 		p1 = (Patient) response.get(0);
 		assertEquals(new IdDt("Patient/1/_history/1"), p1.getId().toUnqualified());
@@ -2513,7 +2513,7 @@ public class GenericClientDstu2Test {
 		response = client.validate().resource(p).execute();
 		assertEquals("http://example.com/fhir/Patient/$validate", capt.getAllValues().get(idx).getURI().toASCIIString());
 		assertEquals("POST", capt.getAllValues().get(idx).getRequestLine().getMethod());
-		assertEquals("application/xml+fhir", capt.getAllValues().get(idx).getFirstHeader("content-type").getValue().replaceAll(";.*", ""));
+		assertEquals(Constants.CT_FHIR_XML, capt.getAllValues().get(idx).getFirstHeader("content-type").getValue().replaceAll(";.*", ""));
 		assertEquals(
 				"<Parameters xmlns=\"http://hl7.org/fhir\"><parameter><name value=\"resource\"/><resource><Patient xmlns=\"http://hl7.org/fhir\"><name><given value=\"GIVEN\"/></name></Patient></resource></parameter></Parameters>",
 				extractBody(capt, idx));
@@ -2524,7 +2524,7 @@ public class GenericClientDstu2Test {
 		response = client.validate().resource(ourCtx.newXmlParser().encodeResourceToString(p)).execute();
 		assertEquals("http://example.com/fhir/Patient/$validate", capt.getAllValues().get(idx).getURI().toASCIIString());
 		assertEquals("POST", capt.getAllValues().get(idx).getRequestLine().getMethod());
-		assertEquals("application/xml+fhir", capt.getAllValues().get(idx).getFirstHeader("content-type").getValue().replaceAll(";.*", ""));
+		assertEquals(Constants.CT_FHIR_XML, capt.getAllValues().get(idx).getFirstHeader("content-type").getValue().replaceAll(";.*", ""));
 		assertEquals(
 				"<Parameters xmlns=\"http://hl7.org/fhir\"><parameter><name value=\"resource\"/><resource><Patient xmlns=\"http://hl7.org/fhir\"><name><given value=\"GIVEN\"/></name></Patient></resource></parameter></Parameters>",
 				extractBody(capt, idx));
@@ -2535,7 +2535,7 @@ public class GenericClientDstu2Test {
 		response = client.validate().resource(ourCtx.newJsonParser().encodeResourceToString(p)).execute();
 		assertEquals("http://example.com/fhir/Patient/$validate", capt.getAllValues().get(idx).getURI().toASCIIString());
 		assertEquals("POST", capt.getAllValues().get(idx).getRequestLine().getMethod());
-		assertEquals("application/json+fhir", capt.getAllValues().get(idx).getFirstHeader("content-type").getValue().replaceAll(";.*", ""));
+		assertEquals(Constants.CT_FHIR_JSON, capt.getAllValues().get(idx).getFirstHeader("content-type").getValue().replaceAll(";.*", ""));
 		assertEquals("{\"resourceType\":\"Parameters\",\"parameter\":[{\"name\":\"resource\",\"resource\":{\"resourceType\":\"Patient\",\"name\":[{\"given\":[\"GIVEN\"]}]}}]}", extractBody(capt, idx));
 		assertNotNull(response.getOperationOutcome());
 		assertEquals("FOOBAR", toOo(response.getOperationOutcome()).getIssueFirstRep().getDiagnosticsElement().getValue());
@@ -2544,7 +2544,7 @@ public class GenericClientDstu2Test {
 		response = client.validate().resource(ourCtx.newJsonParser().encodeResourceToString(p)).prettyPrint().execute();
 		assertEquals("http://example.com/fhir/Patient/$validate?_pretty=true", capt.getAllValues().get(idx).getURI().toASCIIString());
 		assertEquals("POST", capt.getAllValues().get(idx).getRequestLine().getMethod());
-		assertEquals("application/json+fhir", capt.getAllValues().get(idx).getFirstHeader("content-type").getValue().replaceAll(";.*", ""));
+		assertEquals(Constants.CT_FHIR_JSON, capt.getAllValues().get(idx).getFirstHeader("content-type").getValue().replaceAll(";.*", ""));
 		assertThat(extractBody(capt, idx), containsString("\"resourceType\": \"Parameters\",\n"));
 		assertNotNull(response.getOperationOutcome());
 		assertEquals("FOOBAR", toOo(response.getOperationOutcome()).getIssueFirstRep().getDiagnosticsElement().getValue());

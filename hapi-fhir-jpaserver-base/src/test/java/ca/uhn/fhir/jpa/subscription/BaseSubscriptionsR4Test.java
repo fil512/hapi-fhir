@@ -3,12 +3,12 @@ package ca.uhn.fhir.jpa.subscription;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.jpa.dao.DaoConfig;
 import ca.uhn.fhir.jpa.provider.r4.BaseResourceProviderR4Test;
-import ca.uhn.fhir.jpa.subscription.module.LinkedBlockingQueueSubscribableChannel;
+import ca.uhn.fhir.jpa.subscription.module.cache.SubscriptionRegistry;
+import ca.uhn.fhir.jpa.subscription.module.subscriber.SubscriptionMatchingSubscriber;
 import ca.uhn.fhir.rest.api.MethodOutcome;
 import ca.uhn.fhir.rest.server.RestfulServer;
 import ca.uhn.fhir.util.BundleUtil;
 import ca.uhn.fhir.util.PortUtil;
-import com.google.common.collect.Lists;
 import net.ttddyy.dsproxy.QueryCount;
 import net.ttddyy.dsproxy.listener.SingleQueryCountHolder;
 import org.eclipse.jetty.server.Server;
@@ -24,6 +24,8 @@ import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 @Ignore
 public abstract class BaseSubscriptionsR4Test extends BaseResourceProviderR4Test {
@@ -41,18 +43,26 @@ public abstract class BaseSubscriptionsR4Test extends BaseResourceProviderR4Test
 	@Autowired
 	protected SubscriptionTestUtil mySubscriptionTestUtil;
 	@Autowired
-	protected SubscriptionMatcherInterceptor mySubscriptionMatcherInterceptor;
+	SubscriptionRegistry mySubscriptionRegistry;
+	@Autowired
+	SubscriptionMatchingSubscriber mySubscriptionMatchingSubscriber;
 
-	protected CountingInterceptor myCountingInterceptor;
+	protected LatchedService mySubscriptionsMatchedLatch = new LatchedService("Subscriptions Matched");
+	protected int mySubscriptionsMatched;
+
+	protected LatchedService mySubscriptionActivatedLatch = new LatchedService("Subscription Activated");
 
 	protected static String ourListenerServerBase;
 
 	protected List<IIdType> mySubscriptionIds = Collections.synchronizedList(new ArrayList<>());
 
-
 	@After
 	public void afterUnregisterRestHookListener() {
+		mySubscriptionRegistry.removeRegistrationCallbackForUnitTest();
+		mySubscriptionMatchingSubscriber.removeMatchedSubscriptionsCallbackForUnitTest();
 		SubscriptionMatcherInterceptor.setForcePayloadEncodeAndDecodeForUnitTests(false);
+
+		mySubscriptionTestUtil.unregisterSubscriptionInterceptor();
 
 		for (IIdType next : mySubscriptionIds) {
 			IIdType nextId = next.toUnqualifiedVersionless();
@@ -67,8 +77,6 @@ public abstract class BaseSubscriptionsR4Test extends BaseResourceProviderR4Test
 		ourClient.delete().resourceConditionalByUrl("Observation?code:missing=false").execute();
 		ourLog.info("Done deleting all subscriptions");
 		myDaoConfig.setAllowMultipleDelete(new DaoConfig().isAllowMultipleDelete());
-
-		mySubscriptionTestUtil.unregisterSubscriptionInterceptor();
 	}
 
 	@Before
@@ -81,25 +89,24 @@ public abstract class BaseSubscriptionsR4Test extends BaseResourceProviderR4Test
 		if (ourObservationListener != null) {
 			ourObservationListener.clear();
 		}
-
+		mySubscriptionTestUtil.clearChannelInterceptors();
 		// Delete all Subscriptions
 		Bundle allSubscriptions = ourClient.search().forResource(Subscription.class).returnBundle(Bundle.class).execute();
 		for (IBaseResource next : BundleUtil.toListOfResources(myFhirCtx, allSubscriptions)) {
 			ourClient.delete().resource(next).execute();
 		}
 		waitForActivatedSubscriptionCount(0);
-
-		LinkedBlockingQueueSubscribableChannel processingChannel = mySubscriptionMatcherInterceptor.getProcessingChannelForUnitTest();
-		processingChannel.clearInterceptorsForUnitTest();
-		myCountingInterceptor = new CountingInterceptor();
-		processingChannel.addInterceptorForUnitTest(myCountingInterceptor);
+		mySubscriptionRegistry.setRegistrationCallbackForUnitTest((activeSubscription -> mySubscriptionActivatedLatch.countdown()));
+		mySubscriptionMatchingSubscriber.setMatchedSubscriptionsCallbackForUnitTest(count -> {mySubscriptionsMatchedLatch.countdown(); mySubscriptionsMatched = count;});
 	}
-
 
 	protected Subscription createSubscription(String theCriteria, String thePayload) throws InterruptedException {
 		Subscription subscription = newSubscription(theCriteria, thePayload);
 
+		mySubscriptionActivatedLatch.setExpectedCount(1);
 		MethodOutcome methodOutcome = ourClient.create().resource(subscription).execute();
+		mySubscriptionActivatedLatch.awaitExpected();
+
 		subscription.setId(methodOutcome.getId().getIdPart());
 		mySubscriptionIds.add(methodOutcome.getId());
 
@@ -119,7 +126,7 @@ public abstract class BaseSubscriptionsR4Test extends BaseResourceProviderR4Test
 		return subscription;
 	}
 
-
+// FIXME KHS remove
 	protected void waitForQueueToDrain() throws InterruptedException {
 		mySubscriptionTestUtil.waitForQueueToDrain();
 	}
@@ -183,5 +190,4 @@ public abstract class BaseSubscriptionsR4Test extends BaseResourceProviderR4Test
 	public static void stopListenerServer() throws Exception {
 		ourListenerServer.stop();
 	}
-
 }

@@ -195,7 +195,7 @@ public class ResponseHighlightingInterceptorTest {
 
 	@Test
 	public void testForceApplicationJsonPlusFhir() throws Exception {
-		HttpGet httpGet = new HttpGet("http://localhost:" + ourPort + "/Patient/1?_format=" + UrlUtil.escapeUrlParam("application/json+fhir"));
+		HttpGet httpGet = new HttpGet("http://localhost:" + ourPort + "/Patient/1?_format=" + UrlUtil.escapeUrlParam(Constants.CT_FHIR_JSON));
 		httpGet.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1");
 
 		CloseableHttpResponse status = ourClient.execute(httpGet);
@@ -234,7 +234,7 @@ public class ResponseHighlightingInterceptorTest {
 
 	@Test
 	public void testForceApplicationXmlPlusFhir() throws Exception {
-		HttpGet httpGet = new HttpGet("http://localhost:" + ourPort + "/Patient/1?_format=" + UrlUtil.escapeUrlParam("application/xml+fhir"));
+		HttpGet httpGet = new HttpGet("http://localhost:" + ourPort + "/Patient/1?_format=" + UrlUtil.escapeUrlParam(Constants.CT_FHIR_XML));
 		httpGet.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1");
 
 		CloseableHttpResponse status = ourClient.execute(httpGet);
@@ -407,7 +407,7 @@ public class ResponseHighlightingInterceptorTest {
 		ResponseHighlighterInterceptor ic = ourInterceptor;
 
 		HttpServletRequest req = mock(HttpServletRequest.class);
-		when(req.getHeaders(Constants.HEADER_ACCEPT)).thenAnswer(theInvocation -> new ArrayEnumeration<>("application/xml+fhir"));
+		when(req.getHeaders(Constants.HEADER_ACCEPT)).thenAnswer(theInvocation -> new ArrayEnumeration<>(Constants.CT_FHIR_XML));
 
 		HttpServletResponse resp = mock(HttpServletResponse.class);
 		StringWriter sw = new StringWriter();
@@ -436,7 +436,7 @@ public class ResponseHighlightingInterceptorTest {
 		ResponseHighlighterInterceptor ic = ourInterceptor;
 
 		HttpServletRequest req = mock(HttpServletRequest.class);
-		when(req.getHeaders(Constants.HEADER_ACCEPT)).thenAnswer(theInvocation -> new ArrayEnumeration<>("application/xml+fhir"));
+		when(req.getHeaders(Constants.HEADER_ACCEPT)).thenAnswer(theInvocation -> new ArrayEnumeration<>(Constants.CT_FHIR_XML));
 
 		HttpServletResponse resp = mock(HttpServletResponse.class);
 		StringWriter sw = new StringWriter();

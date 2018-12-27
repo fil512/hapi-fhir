@@ -17,7 +17,7 @@ public class SubscriptionLoaderFhirClientTest extends BaseBlockingQueueSubscriba
 
 	@Before
 	public void loadSubscriptions() {
-		String payload = "application/fhir+json";
+		String payload = Constants.CT_FHIR_JSON_NEW;
 
 		String criteria1 = "Observation?code=SNOMED-CT|" + myCode + "&_format=xml";
 		String criteria2 = "Observation?code=SNOMED-CT|" + myCode + "111&_format=xml";
@@ -33,10 +33,10 @@ public class SubscriptionLoaderFhirClientTest extends BaseBlockingQueueSubscriba
 
 	@Test
 	public void testSubscriptionLoaderFhirClient() throws Exception {
+		ourObservationListener.setExpectedCount(1);
 		sendObservation(myCode, "SNOMED-CT");
 
-		ourObservationListener.waitForCreatedSize(0);
-		ourObservationListener.waitForUpdatedSize(1);
+		ourObservationListener.awaitExpected();
 		assertEquals(Constants.CT_FHIR_JSON_NEW, ourObservationListener.getContentType(0));
 	}
 }

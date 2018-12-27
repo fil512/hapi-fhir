@@ -133,7 +133,7 @@ public interface IClientExecutable<T extends IClientExecutable<?, Y>, Y> {
 	 * just use those methods if you simply want to request a specific FHIR encoding.
 	 * </p>
 	 *
-	 * @param theHeaderValue The header value, e.g. "application/fhir+json". Constants such
+	 * @param theHeaderValue The header value, e.g. Constants.CT_FHIR_JSON_NEW. Constants such
 	 *                       as {@link ca.uhn.fhir.rest.api.Constants#CT_FHIR_XML_NEW} and
 	 *                       {@link ca.uhn.fhir.rest.api.Constants#CT_FHIR_JSON_NEW} may
 	 *                       be useful. If set to <code>null</code> or an empty string, the

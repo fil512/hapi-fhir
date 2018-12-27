@@ -24,6 +24,7 @@ package org.hl7.fhir.convertors;
 import java.util.ArrayList;
 import java.util.List;
 
+import ca.uhn.fhir.rest.api.Constants;
 import org.hl7.fhir.dstu3.model.Coding;
 import org.hl7.fhir.dstu3.model.ContactDetail;
 import org.hl7.fhir.dstu3.model.Contributor.ContributorType;
@@ -19722,8 +19723,8 @@ public class VersionConvertor_30_40 {
     if (src == null)
       return null;
     switch (src) {
-    case XML: return "application/fhir+xml";
-    case JSON: return "application/fhir+json";
+    case XML: return Constants.CT_FHIR_XML_NEW;
+    case JSON: return Constants.CT_FHIR_JSON_NEW;
     case TTL: return "text/turtle";
     case NONE: return null;
     default: return null;

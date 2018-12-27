@@ -10,6 +10,12 @@ import ca.uhn.fhir.jpa.subscription.module.subscriber.email.SubscriptionDeliveri
 import org.hl7.fhir.instance.model.Subscription;
 import org.hl7.fhir.instance.model.api.IIdType;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageHandler;
+import org.springframework.messaging.support.ExecutorChannelInterceptor;
+
+import java.util.concurrent.CountDownLatch;
 
 public class SubscriptionTestUtil {
 	private static final org.slf4j.Logger ourLog = org.slf4j.LoggerFactory.getLogger(SubscriptionTestUtil.class);
@@ -25,6 +31,7 @@ public class SubscriptionTestUtil {
 	@Autowired
 	private SubscriptionRegistry mySubscriptionRegistry;
 
+	// FIXME KHS add interceptor
 	public int getExecutorQueueSize() {
 		LinkedBlockingQueueSubscribableChannel channel = mySubscriptionMatcherInterceptor.getProcessingChannelForUnitTest();
 		return channel.getQueueSizeForUnitTest();
@@ -82,5 +89,20 @@ public class SubscriptionTestUtil {
 
 	public IEmailSender getEmailSender() {
 		return myEmailSender;
+	}
+
+	public void addChannelInterceptor(LatchedService theLatchedService) {
+		ExecutorChannelInterceptor interceptor = new ExecutorChannelInterceptor() {
+			@Override
+			public void afterMessageHandled(Message<?> message, MessageChannel channel, MessageHandler handler, Exception ex) {
+				theLatchedService.countdown();
+			}
+		};
+
+		mySubscriptionMatcherInterceptor.getProcessingChannelForUnitTest().setInterceptorForUnitTest(interceptor);
+	}
+
+	public void clearChannelInterceptors() {
+		mySubscriptionMatcherInterceptor.getProcessingChannelForUnitTest().clearInterceptorsForUnitTest();
 	}
 }

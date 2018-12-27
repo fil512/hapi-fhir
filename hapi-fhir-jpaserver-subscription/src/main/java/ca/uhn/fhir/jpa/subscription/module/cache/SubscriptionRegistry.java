@@ -21,6 +21,7 @@ package ca.uhn.fhir.jpa.subscription.module.cache;
  */
 
 import ca.uhn.fhir.jpa.subscription.module.CanonicalSubscription;
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.Validate;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.instance.model.api.IIdType;
@@ -33,6 +34,7 @@ import javax.annotation.PreDestroy;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  *
@@ -53,6 +55,8 @@ public class SubscriptionRegistry {
 	SubscriptionChannelFactory mySubscriptionDeliveryChannelFactory;
 
 	private final ActiveSubscriptionCache myActiveSubscriptionCache = new ActiveSubscriptionCache();
+
+	private Optional<Consumer<ActiveSubscription>> myRegistrationCallbackForUnitTest = Optional.empty();
 
 	public ActiveSubscription get(String theIdPart) {
 		return myActiveSubscriptionCache.get(theIdPart);
@@ -85,7 +89,19 @@ public class SubscriptionRegistry {
 
 		deliveryHandler.ifPresent(handler -> activeSubscription.register(handler));
 
+		myRegistrationCallbackForUnitTest.ifPresent(callback -> callback.accept(activeSubscription));
+
 		return canonicalized;
+	}
+
+	@VisibleForTesting
+	public void setRegistrationCallbackForUnitTest(Consumer<ActiveSubscription> theRegistrationCallbackForUnitTest) {
+		myRegistrationCallbackForUnitTest = Optional.of(theRegistrationCallbackForUnitTest);
+	}
+
+	@VisibleForTesting
+	public void removeRegistrationCallbackForUnitTest() {
+		myRegistrationCallbackForUnitTest = Optional.empty();
 	}
 
 	public void unregisterSubscription(IIdType theId) {
@@ -132,5 +148,10 @@ public class SubscriptionRegistry {
 
 	public int size() {
 		return myActiveSubscriptionCache.size();
+	}
+
+	@VisibleForTesting
+	public void clearForUnitTest() {
+		myActiveSubscriptionCache.clearForUnitTest();
 	}
 }

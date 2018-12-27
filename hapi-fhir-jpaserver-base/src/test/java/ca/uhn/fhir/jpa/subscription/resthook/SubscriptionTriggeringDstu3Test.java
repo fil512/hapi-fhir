@@ -141,7 +141,7 @@ public class SubscriptionTriggeringDstu3Test extends BaseResourceProviderDstu3Te
 
 	@Test
 	public void testTriggerResourceToSpecificSubscription() throws Exception {
-		String payload = "application/fhir+json";
+		String payload = Constants.CT_FHIR_JSON_NEW;
 
 		String code = "1000000050";
 		String criteria1 = "Observation?code=SNOMED-CT|" + code + "&_format=xml";
@@ -178,7 +178,7 @@ public class SubscriptionTriggeringDstu3Test extends BaseResourceProviderDstu3Te
 	public void testTriggerUsingMultipleSearches() throws Exception {
 		myDaoConfig.setSearchPreFetchThresholds(Lists.newArrayList(13, 22, 100));
 
-		String payload = "application/fhir+json";
+		String payload = Constants.CT_FHIR_JSON_NEW;
 		IdType sub1id = createSubscription("Observation?", payload, ourListenerServerBase).getIdElement();
 		IdType sub2id = createSubscription("Patient?", payload, ourListenerServerBase).getIdElement();
 
@@ -234,7 +234,7 @@ public class SubscriptionTriggeringDstu3Test extends BaseResourceProviderDstu3Te
 
 	@Test
 	public void testTriggerUsingSearchesWithCount() throws Exception {
-		String payload = "application/fhir+json";
+		String payload = Constants.CT_FHIR_JSON_NEW;
 		IdType sub1id = createSubscription("Observation?", payload, ourListenerServerBase).getIdElement();
 		IdType sub2id = createSubscription("Patient?", payload, ourListenerServerBase).getIdElement();
 
@@ -303,7 +303,7 @@ public class SubscriptionTriggeringDstu3Test extends BaseResourceProviderDstu3Te
 
 	@Test
 	public void testTriggerAllSubscriptions() throws Exception {
-		String payload = "application/fhir+json";
+		String payload = Constants.CT_FHIR_JSON_NEW;
 		IdType sub1id = createSubscription("Observation?", payload, ourListenerServerBase).getIdElement();
 		IdType sub2id = createSubscription("Observation?status=final", payload, ourListenerServerBase).getIdElement();
 
@@ -341,7 +341,7 @@ public class SubscriptionTriggeringDstu3Test extends BaseResourceProviderDstu3Te
 
 	@Test
 	public void testTriggerResourceToSpecificSubscriptionWhichDoesntMatch() throws Exception {
-		String payload = "application/fhir+json";
+		String payload = Constants.CT_FHIR_JSON_NEW;
 
 		String code = "1000000050";
 		String criteria1 = "Observation?code=SNOMED-CT|" + code + "&_format=xml";

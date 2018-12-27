@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests copied from jpa.subscription.resthook.RestHookTestDstu3Test
@@ -16,7 +17,7 @@ public class SubscriptionCheckingSubscriberTest extends BaseBlockingQueueSubscri
 
 	@Test
 	public void testRestHookSubscriptionApplicationFhirJson() throws Exception {
-		String payload = "application/fhir+json";
+		String payload = Constants.CT_FHIR_JSON_NEW;
 
 		String code = "1000000050";
 		String criteria1 = "Observation?code=SNOMED-CT|" + code + "&_format=xml";
@@ -25,16 +26,18 @@ public class SubscriptionCheckingSubscriberTest extends BaseBlockingQueueSubscri
 		createSubscription(criteria1, payload, ourListenerServerBase);
 		createSubscription(criteria2, payload, ourListenerServerBase);
 
+		ourObservationListener.setExpectedCount(1);
+
 		sendObservation(code, "SNOMED-CT");
 
-		ourObservationListener.waitForCreatedSize(0);
-		ourObservationListener.waitForUpdatedSize(1);
+		ourObservationListener.awaitExpected();
+
 		assertEquals(Constants.CT_FHIR_JSON_NEW, ourObservationListener.getContentType(0));
 	}
 
 	@Test
 	public void testRestHookSubscriptionApplicationXmlJson() throws Exception {
-		String payload = "application/fhir+xml";
+		String payload = Constants.CT_FHIR_XML_NEW;
 
 		String code = "1000000050";
 		String criteria1 = "Observation?code=SNOMED-CT|" + code + "&_format=xml";
@@ -43,10 +46,10 @@ public class SubscriptionCheckingSubscriberTest extends BaseBlockingQueueSubscri
 		createSubscription(criteria1, payload, ourListenerServerBase);
 		createSubscription(criteria2, payload, ourListenerServerBase);
 
+		ourObservationListener.setExpectedCount(1);
 		sendObservation(code, "SNOMED-CT");
+		ourObservationListener.awaitExpectedWithTimeout(5);
 
-		ourObservationListener.waitForCreatedSize(0);
-		ourObservationListener.waitForUpdatedSize(1);
 		assertEquals(Constants.CT_FHIR_XML_NEW, ourObservationListener.getContentType(0));
 	}
 
@@ -61,9 +64,8 @@ public class SubscriptionCheckingSubscriberTest extends BaseBlockingQueueSubscri
 		createSubscription(criteria1, payload, ourListenerServerBase);
 		createSubscription(criteria2, payload, ourListenerServerBase);
 
+		ourObservationListener.setExpectedCount(1);
 		sendObservation(code, "SNOMED-CT");
-
-		ourObservationListener.waitForCreatedSize(0);
-		ourObservationListener.waitForUpdatedSize(0);
+		ourObservationListener.expectNothing();
 	}
 }

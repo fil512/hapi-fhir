@@ -119,7 +119,7 @@ public class RestHookTestDstu3Test extends BaseResourceProviderDstu3Test {
 
 	@Test
 	public void testRestHookSubscriptionApplicationFhirJson() throws Exception {
-		String payload = "application/fhir+json";
+		String payload = Constants.CT_FHIR_JSON_NEW;
 
 		String code = "1000000050";
 		String criteria1 = "Observation?code=SNOMED-CT|" + code + "&_format=xml";
@@ -295,7 +295,7 @@ public class RestHookTestDstu3Test extends BaseResourceProviderDstu3Test {
 
 	@Test
 	public void testRestHookSubscriptionApplicationXmlJson() throws Exception {
-		String payload = "application/fhir+xml";
+		String payload = Constants.CT_FHIR_XML_NEW;
 
 		String code = "1000000050";
 		String criteria1 = "Observation?code=SNOMED-CT|" + code + "&_format=xml";

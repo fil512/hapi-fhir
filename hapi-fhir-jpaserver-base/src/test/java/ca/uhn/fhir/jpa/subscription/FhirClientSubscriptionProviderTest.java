@@ -41,7 +41,7 @@ public class FhirClientSubscriptionProviderTest extends BaseSubscriptionsR4Test 
 
 	@Test
 	public void testSubscriptionLoaderFhirClient() throws Exception {
-		String payload = "application/fhir+json";
+		String payload = Constants.CT_FHIR_JSON_NEW;
 
 		String criteria1 = "Observation?code=SNOMED-CT|" + myCode + "&_format=xml";
 		String criteria2 = "Observation?code=SNOMED-CT|" + myCode + "111&_format=xml";
@@ -51,11 +51,10 @@ public class FhirClientSubscriptionProviderTest extends BaseSubscriptionsR4Test 
 		createSubscription(criteria1, payload);
 		createSubscription(criteria2, payload);
 		waitForActivatedSubscriptionCount(2);
-
+		ourObservationListener.setExpectedCount(1);
 		sendObservation(myCode, "SNOMED-CT");
 
-		ourObservationListener.waitForCreatedSize(0);
-		ourObservationListener.waitForUpdatedSize(1);
+		ourObservationListener.awaitExpected();
 		assertEquals(Constants.CT_FHIR_JSON_NEW, ourObservationListener.getContentType(0));
 	}
 }

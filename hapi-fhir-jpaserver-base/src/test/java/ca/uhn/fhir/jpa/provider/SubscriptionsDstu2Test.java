@@ -4,6 +4,7 @@ import ca.uhn.fhir.jpa.util.SubscriptionsRequireManualActivationInterceptorDstu2
 import ca.uhn.fhir.model.dstu2.resource.Subscription;
 import ca.uhn.fhir.model.dstu2.valueset.SubscriptionChannelTypeEnum;
 import ca.uhn.fhir.model.dstu2.valueset.SubscriptionStatusEnum;
+import ca.uhn.fhir.rest.api.Constants;
 import ca.uhn.fhir.rest.api.EncodingEnum;
 import ca.uhn.fhir.rest.server.exceptions.UnprocessableEntityException;
 import ca.uhn.fhir.util.TestUtil;
@@ -75,7 +76,7 @@ public class SubscriptionsDstu2Test extends BaseResourceProviderDstu2Test {
 	public void testCreateInvalidWrongStatus() {
 		Subscription subs = new Subscription();
 		subs.getChannel().setType(SubscriptionChannelTypeEnum.REST_HOOK);
-		subs.getChannel().setPayload("application/fhir+json");
+		subs.getChannel().setPayload(Constants.CT_FHIR_JSON_NEW);
 		subs.getChannel().setEndpoint("http://foo");
 		subs.setStatus(SubscriptionStatusEnum.ACTIVE);
 		subs.setCriteria("Observation?identifier=123");

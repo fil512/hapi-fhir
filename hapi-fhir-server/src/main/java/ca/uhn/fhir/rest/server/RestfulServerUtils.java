@@ -351,7 +351,7 @@ public class RestfulServerUtils {
 		/*
 		 * Some browsers (e.g. FF) request "application/xml" in their Accept header,
 		 * and we generally want to treat this as a preference for FHIR XML even if
-		 * it's not the FHIR version of the CT, which should be "application/xml+fhir".
+		 * it's not the FHIR version of the CT, which should be Constants.CT_FHIR_XML.
 		 *
 		 * When we're serving up Binary resources though, we are a bit more strict,
 		 * since Binary is supposed to use native content types unless the client has

@@ -157,7 +157,7 @@ public class SystemProviderR4Test extends BaseJpaR4Test {
 		}
 
 		HttpGet get = new HttpGet(ourServerBase + "/Patient/$everything");
-		get.addHeader("Accept", "application/xml+fhir");
+		get.addHeader("Accept", Constants.CT_FHIR_XML);
 		CloseableHttpResponse http = ourHttpClient.execute(get);
 		try {
 			String response = IOUtils.toString(http.getEntity().getContent(), StandardCharsets.UTF_8);
@@ -256,7 +256,7 @@ public class SystemProviderR4Test extends BaseJpaR4Test {
 		HttpGet get = new HttpGet(ourServerBase);
 //		get.addHeader("Accept", "application/xml, text/html");
 		CloseableHttpResponse http = ourHttpClient.execute(get);
-		assertThat(http.getFirstHeader("Content-Type").getValue(), containsString("application/fhir+json"));
+		assertThat(http.getFirstHeader("Content-Type").getValue(), containsString(Constants.CT_FHIR_JSON_NEW));
 	}
 
 

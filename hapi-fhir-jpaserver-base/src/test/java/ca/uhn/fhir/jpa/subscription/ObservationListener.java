@@ -1,5 +1,6 @@
 package ca.uhn.fhir.jpa.subscription;
 
+import ca.uhn.fhir.jpa.dao.BaseJpaTest;
 import ca.uhn.fhir.model.primitive.IdDt;
 import ca.uhn.fhir.rest.annotation.Create;
 import ca.uhn.fhir.rest.annotation.ResourceParam;
@@ -17,24 +18,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 
-import static ca.uhn.fhir.jpa.dao.BaseJpaTest.waitForSize;
-
-public class ObservationListener<T extends IBaseResource> implements IResourceProvider {
+public class ObservationListener<T extends IBaseResource> extends LatchedService implements IResourceProvider {
 	private static final Logger ourLog = LoggerFactory.getLogger(ObservationListener.class);
-
-	private CountDownLatch myCountdownLatch;
 
 	private final List<String> myContentTypes = Collections.synchronizedList(new ArrayList<>());
 	private final List<String> myHeaders = Collections.synchronizedList(new ArrayList<>());
-	private final List<T> myCreatedObservations = Collections.synchronizedList(Lists.newArrayList());
-	private final List<T> myUpdatedObservations = Collections.synchronizedList(Lists.newArrayList());
+	private final List<IBaseResource> myCreatedObservations = Collections.synchronizedList(Lists.newArrayList());
+	private final List<IBaseResource> myUpdatedObservations = Collections.synchronizedList(Lists.newArrayList());
 
 	private Class<T> type;
 
-	// Hack to get generic type
 	public ObservationListener(Class<T> type) {
+		super("Observation RestHook Listener");
 		this.type = type;
 	}
 
@@ -66,12 +62,14 @@ public class ObservationListener<T extends IBaseResource> implements IResourcePr
 
 	@Update
 	public MethodOutcome update(@ResourceParam T theObservation, HttpServletRequest theRequest) {
-		ourLog.info("Received Listener Update");
+		ourLog.info("Received Listener Update Observation {}", theObservation.getIdElement().getIdPart());
 		myUpdatedObservations.add(theObservation);
-		myContentTypes.add(theRequest.getHeader(Constants.HEADER_CONTENT_TYPE).replaceAll(";.*", ""));
+		String contentType = theRequest.getHeader(Constants.HEADER_CONTENT_TYPE).replaceAll(";.*", "");
+		myContentTypes.add(contentType);
 		extractHeaders(theRequest);
+
 		countdown();
-		return new MethodOutcome(new IdDt("Observation/1"), false);
+		return new MethodOutcome(theObservation.getIdElement(), false);
 	}
 
 	public void clear() {
@@ -81,18 +79,11 @@ public class ObservationListener<T extends IBaseResource> implements IResourcePr
 		myHeaders.clear();
 	}
 
-	public void waitForCreatedSize(int size) {
-		waitForSize(size, myCreatedObservations);
-	}
-	public void waitForUpdatedSize(int size) {
-		waitForSize(size, myUpdatedObservations);
-	}
-
 	public String getContentType(int index) {
 		return myContentTypes.get(index);
 	}
 
-	public T getUpdatedObservation(int index) {
+	public IBaseResource getUpdatedObservation(int index) {
 		return myUpdatedObservations.get(index);
 	}
 
@@ -100,18 +91,17 @@ public class ObservationListener<T extends IBaseResource> implements IResourcePr
 		return myUpdatedObservations.size();
 	}
 
-	private void countdown() {
-		if (myCountdownLatch != null) {
-			myCountdownLatch.countDown();
-		}
-	}
-
-	public CountDownLatch newCountDownLatch(int count) {
-		myCountdownLatch = new CountDownLatch(count);
-		return myCountdownLatch;
-	}
-
 	public boolean headersHasItem(String theItem) {
 		return myHeaders.contains(theItem);
+	}
+
+	public void waitForCreatedSize(int i) {
+		BaseJpaTest.waitForSize(i, myCreatedObservations);
+		// FIXME KHS remove
+	}
+
+	public void waitForUpdatedSize(int i) {
+		BaseJpaTest.waitForSize(i, myUpdatedObservations);
+		// FIXME KHS remove
 	}
 }

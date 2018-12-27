@@ -436,7 +436,7 @@ public class ResourceProviderR4Test extends BaseResourceProviderR4Test {
 		fromDB.setContent(arr);
 		String encoded = myFhirCtx.newJsonParser().encodeResourceToString(fromDB);
 		putRequest = new HttpPut(ourServerBase + "/Binary/" + resource.getIdPart());
-		putRequest.setEntity(new StringEntity(encoded, ContentType.parse("application/json+fhir")));
+		putRequest.setEntity(new StringEntity(encoded, ContentType.parse(Constants.CT_FHIR_JSON)));
 		resp = ourHttpClient.execute(putRequest);
 		try {
 			assertEquals(200, resp.getStatusLine().getStatusCode());
@@ -454,7 +454,7 @@ public class ResourceProviderR4Test extends BaseResourceProviderR4Test {
 		binary.setId("");
 		encoded = myFhirCtx.newJsonParser().encodeResourceToString(binary);
 		putRequest = new HttpPut(ourServerBase + "/Binary/" + resource.getIdPart());
-		putRequest.setEntity(new StringEntity(encoded, ContentType.parse("application/json+fhir")));
+		putRequest.setEntity(new StringEntity(encoded, ContentType.parse(Constants.CT_FHIR_JSON)));
 		resp = ourHttpClient.execute(putRequest);
 		try {
 			assertEquals(400, resp.getStatusLine().getStatusCode());
@@ -4295,7 +4295,7 @@ public class ResourceProviderR4Test extends BaseResourceProviderR4Test {
 	public void testTransaction() throws Exception {
 		String contents = loadClasspath("/update.xml");
 		HttpPost post = new HttpPost(ourServerBase);
-		post.setEntity(new StringEntity(contents, ContentType.create("application/xml+fhir", "UTF-8")));
+		post.setEntity(new StringEntity(contents, ContentType.create(Constants.CT_FHIR_XML, "UTF-8")));
 		try (CloseableHttpResponse resp = ourHttpClient.execute(post)) {
 			assertEquals(200, resp.getStatusLine().getStatusCode());
 			String output = IOUtils.toString(resp.getEntity().getContent(), StandardCharsets.UTF_8);
@@ -4607,7 +4607,7 @@ public class ResourceProviderR4Test extends BaseResourceProviderR4Test {
 		String encoded = myFhirCtx.newJsonParser().encodeResourceToString(p);
 
 		HttpPut put = new HttpPut(ourServerBase + "/Patient/A");
-		put.setEntity(new StringEntity(encoded, "application/fhir+json", "UTF-8"));
+		put.setEntity(new StringEntity(encoded, Constants.CT_FHIR_JSON_NEW, "UTF-8"));
 
 		CloseableHttpResponse response = ourHttpClient.execute(put);
 		try {
@@ -4622,7 +4622,7 @@ public class ResourceProviderR4Test extends BaseResourceProviderR4Test {
 		encoded = myFhirCtx.newJsonParser().encodeResourceToString(p);
 
 		put = new HttpPut(ourServerBase + "/Patient/A");
-		put.setEntity(new StringEntity(encoded, "application/fhir+json", "UTF-8"));
+		put.setEntity(new StringEntity(encoded, Constants.CT_FHIR_JSON_NEW, "UTF-8"));
 
 		response = ourHttpClient.execute(put);
 		try {

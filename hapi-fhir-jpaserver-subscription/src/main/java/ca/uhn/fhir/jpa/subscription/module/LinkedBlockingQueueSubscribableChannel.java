@@ -30,9 +30,11 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHandler;
 import org.springframework.messaging.SubscribableChannel;
 import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.ExecutorChannelInterceptor;
 import org.springframework.messaging.support.ExecutorSubscribableChannel;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.concurrent.*;
 
 public class LinkedBlockingQueueSubscribableChannel implements SubscribableChannel {
@@ -99,5 +101,11 @@ public class LinkedBlockingQueueSubscribableChannel implements SubscribableChann
 	@VisibleForTesting
 	public int getQueueSizeForUnitTest() {
 		return myQueue.size();
+	}
+
+	@VisibleForTesting
+	public void setInterceptorForUnitTest(ExecutorChannelInterceptor interceptor) {
+		mySubscribableChannel.setInterceptors(Collections.emptyList());
+		mySubscribableChannel.addInterceptor(interceptor);
 	}
 }

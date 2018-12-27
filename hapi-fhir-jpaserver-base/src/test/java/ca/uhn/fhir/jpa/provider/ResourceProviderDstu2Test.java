@@ -334,7 +334,7 @@ public class ResourceProviderDstu2Test extends BaseResourceProviderDstu2Test {
 		fromDB.setContent(arr);
 		String encoded = myFhirCtx.newJsonParser().encodeResourceToString(fromDB);
 		putRequest = new HttpPut(ourServerBase + "/Binary/" + resource.getIdPart());
-		putRequest.setEntity(new StringEntity(encoded, ContentType.parse("application/json+fhir")));
+		putRequest.setEntity(new StringEntity(encoded, ContentType.parse(Constants.CT_FHIR_JSON)));
 		resp = ourHttpClient.execute(putRequest);
 		try {
 			assertEquals(200, resp.getStatusLine().getStatusCode());
@@ -353,7 +353,7 @@ public class ResourceProviderDstu2Test extends BaseResourceProviderDstu2Test {
 		binary.setId("");
 		encoded = myFhirCtx.newJsonParser().encodeResourceToString(binary);
 		putRequest = new HttpPut(ourServerBase + "/Binary/" + resource.getIdPart());
-		putRequest.setEntity(new StringEntity(encoded, ContentType.parse("application/json+fhir")));
+		putRequest.setEntity(new StringEntity(encoded, ContentType.parse(Constants.CT_FHIR_JSON)));
 		resp = ourHttpClient.execute(putRequest);
 		try {
 			assertEquals(400, resp.getStatusLine().getStatusCode());
@@ -2431,7 +2431,7 @@ public class ResourceProviderDstu2Test extends BaseResourceProviderDstu2Test {
 	public void testTransaction() throws Exception {
 		String contents = loadClasspath("/update.xml");
 		HttpPost post = new HttpPost(ourServerBase);
-		post.setEntity(new StringEntity(contents, ContentType.create("application/xml+fhir", "UTF-8")));
+		post.setEntity(new StringEntity(contents, ContentType.create(Constants.CT_FHIR_XML, "UTF-8")));
 		CloseableHttpResponse resp = ourHttpClient.execute(post);
 		try {
 			assertEquals(200, resp.getStatusLine().getStatusCode());

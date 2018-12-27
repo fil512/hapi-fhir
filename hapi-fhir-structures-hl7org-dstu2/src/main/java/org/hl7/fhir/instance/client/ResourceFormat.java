@@ -31,6 +31,8 @@ package org.hl7.fhir.instance.client;
 */
 
 
+import ca.uhn.fhir.rest.api.Constants;
+
 /**
  * Enumeration for preferred FHIR resource formats.
  * 
@@ -39,8 +41,8 @@ package org.hl7.fhir.instance.client;
  */
 public enum ResourceFormat {
 	
-  RESOURCE_XML("application/xml+fhir"),
-  RESOURCE_JSON("application/json+fhir");
+  RESOURCE_XML(Constants.CT_FHIR_XML),
+  RESOURCE_JSON(Constants.CT_FHIR_JSON);
 
 	
 	private String header;

@@ -500,7 +500,9 @@ public class DaoConfig {
 	}
 
 	public void unregisterInterceptor(IServerInterceptor theInterceptor) {
-		Validate.notNull(theInterceptor, "Interceptor can not be null");
+		if (theInterceptor == null) {
+			return;
+		}
 		myInterceptors.remove(theInterceptor);
 	}
 

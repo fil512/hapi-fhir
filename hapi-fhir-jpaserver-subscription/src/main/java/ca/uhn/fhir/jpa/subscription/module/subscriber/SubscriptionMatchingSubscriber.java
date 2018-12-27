@@ -5,6 +5,7 @@ import ca.uhn.fhir.jpa.subscription.module.ResourceModifiedMessage;
 import ca.uhn.fhir.jpa.subscription.module.cache.ActiveSubscription;
 import ca.uhn.fhir.jpa.subscription.module.cache.SubscriptionRegistry;
 import ca.uhn.fhir.jpa.subscription.module.matcher.ISubscriptionMatcher;
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.StringUtils;
 import org.hl7.fhir.instance.model.api.IIdType;
 import org.slf4j.Logger;
@@ -17,6 +18,9 @@ import org.springframework.messaging.MessagingException;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
@@ -51,6 +55,9 @@ public class SubscriptionMatchingSubscriber implements MessageHandler {
 	@Autowired
 	private SubscriptionRegistry mySubscriptionRegistry;
 
+	private AtomicInteger myMatchesCountForUnitTest = new AtomicInteger();
+	private Optional<Consumer<Integer>> myMatchedSubscriptionsCallbackForUnitTest = Optional.empty();
+
 	@Override
 	public void handleMessage(Message<?> theMessage) throws MessagingException {
 		ourLog.trace("Handling resource modified message: {}", theMessage);
@@ -84,6 +91,9 @@ public class SubscriptionMatchingSubscriber implements MessageHandler {
 
 		ourLog.trace("Testing {} subscriptions for applicability", subscriptions.size());
 
+		// FIXME KHS
+		ourLog.info(">>> Setting match count zero");
+		myMatchesCountForUnitTest = new AtomicInteger();
 		for (ActiveSubscription nextActiveSubscription : subscriptions) {
 
 			String nextSubscriptionId = nextActiveSubscription.getIdElement(myFhirContext).toUnqualifiedVersionless().getValue();
@@ -117,7 +127,13 @@ public class SubscriptionMatchingSubscriber implements MessageHandler {
 				continue;
 			}
 
-			ourLog.debug("Found match: queueing rest-hook notification for resource: {}", id.toUnqualifiedVersionless().getValue());
+			// FIXME KHS
+			ourLog.info(">>> Incrementing");
+			myMatchesCountForUnitTest.incrementAndGet();
+
+			ourLog.debug("Found match for Subscription {}: queueing rest-hook notification for resource: {}",
+				nextSubscriptionId,
+				id.toUnqualifiedVersionless().getValue());
 
 			ResourceDeliveryMessage deliveryMsg = new ResourceDeliveryMessage();
 			deliveryMsg.setPayload(myFhirContext, theMsg.getNewPayload(myFhirContext));
@@ -133,5 +149,17 @@ public class SubscriptionMatchingSubscriber implements MessageHandler {
 				ourLog.warn("Do not have deliovery channel for subscription {}", nextActiveSubscription.getIdElement(myFhirContext));
 			}
 		}
+		ourLog.info(">>> calling matches callback with {}", myMatchesCountForUnitTest.intValue());
+		myMatchedSubscriptionsCallbackForUnitTest.ifPresent(callback -> callback.accept(myMatchesCountForUnitTest.intValue()));
+	}
+
+	@VisibleForTesting
+	public void setMatchedSubscriptionsCallbackForUnitTest(Consumer<Integer> theRegistrationCallbackForUnitTest) {
+		myMatchedSubscriptionsCallbackForUnitTest = Optional.of(theRegistrationCallbackForUnitTest);
+	}
+
+	@VisibleForTesting
+	public void removeMatchedSubscriptionsCallbackForUnitTest() {
+		myMatchedSubscriptionsCallbackForUnitTest = Optional.empty();
 	}
 }

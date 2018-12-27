@@ -589,7 +589,7 @@ public class ResourceProviderDstu3ValueSetTest extends BaseResourceProviderDstu3
 		ourLog.info("* Requesting: {}", url);
 
 		HttpGet request = new HttpGet(url);
-		request.addHeader("Accept", "application/fhir+json");
+		request.addHeader("Accept", ca.uhn.fhir.rest.api.Constants.CT_FHIR_JSON_NEW);
 		try (CloseableHttpResponse response = ourHttpClient.execute(request)) {
 			String respString = IOUtils.toString(response.getEntity().getContent(), Charsets.UTF_8);
 			ourLog.info(respString);

@@ -6247,7 +6247,7 @@ public class TestScript extends MetadataResource {
         protected StringType field;
 
         /**
-         * The value of the header e.g. "application/fhir+xml".
+         * The value of the header e.g. Constants.CT_FHIR_XML_NEW.
          */
         @Child(name = "value", type = {StringType.class}, order=2, min=1, max=1, modifier=false, summary=false)
         @Description(shortDefinition="HTTP headerfield value", formalDefinition="The value of the header e.g. \"application/fhir+xml\"." )
@@ -6317,7 +6317,7 @@ public class TestScript extends MetadataResource {
         }
 
         /**
-         * @return {@link #value} (The value of the header e.g. "application/fhir+xml".). This is the underlying object with id, value and extensions. The accessor "getValue" gives direct access to the value
+         * @return {@link #value} (The value of the header e.g. Constants.CT_FHIR_XML_NEW.). This is the underlying object with id, value and extensions. The accessor "getValue" gives direct access to the value
          */
         public StringType getValueElement() { 
           if (this.value == null)
@@ -6337,7 +6337,7 @@ public class TestScript extends MetadataResource {
         }
 
         /**
-         * @param value {@link #value} (The value of the header e.g. "application/fhir+xml".). This is the underlying object with id, value and extensions. The accessor "getValue" gives direct access to the value
+         * @param value {@link #value} (The value of the header e.g. Constants.CT_FHIR_XML_NEW.). This is the underlying object with id, value and extensions. The accessor "getValue" gives direct access to the value
          */
         public SetupActionOperationRequestHeaderComponent setValueElement(StringType value) { 
           this.value = value;
@@ -6345,14 +6345,14 @@ public class TestScript extends MetadataResource {
         }
 
         /**
-         * @return The value of the header e.g. "application/fhir+xml".
+         * @return The value of the header e.g. Constants.CT_FHIR_XML_NEW.
          */
         public String getValue() { 
           return this.value == null ? null : this.value.getValue();
         }
 
         /**
-         * @param value The value of the header e.g. "application/fhir+xml".
+         * @param value The value of the header e.g. Constants.CT_FHIR_XML_NEW.
          */
         public SetupActionOperationRequestHeaderComponent setValue(String value) { 
             if (this.value == null)

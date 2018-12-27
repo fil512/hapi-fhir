@@ -1,10 +1,9 @@
 package ca.uhn.fhir.jpa.subscription.module.standalone;
 
 import ca.uhn.fhir.context.FhirContext;
-import ca.uhn.fhir.jpa.subscription.module.BaseSubscriptionDstu3Test;
-import ca.uhn.fhir.jpa.subscription.module.ObservationListener;
-import ca.uhn.fhir.jpa.subscription.module.ResourceModifiedMessage;
+import ca.uhn.fhir.jpa.subscription.module.*;
 import ca.uhn.fhir.jpa.subscription.module.cache.SubscriptionChannelFactory;
+import ca.uhn.fhir.jpa.subscription.module.cache.SubscriptionRegistry;
 import ca.uhn.fhir.jpa.subscription.module.subscriber.ResourceModifiedJsonMessage;
 import ca.uhn.fhir.jpa.subscription.module.subscriber.SubscriptionMatchingSubscriberTest;
 import ca.uhn.fhir.rest.server.RestfulServer;
@@ -22,11 +21,16 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageHandler;
 import org.springframework.messaging.SubscribableChannel;
+import org.springframework.messaging.support.ExecutorChannelInterceptor;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class BaseBlockingQueueSubscribableChannelDstu3Test extends BaseSubscriptionDstu3Test {
 	private static final Logger ourLog = LoggerFactory.getLogger(SubscriptionMatchingSubscriberTest.class);
@@ -37,6 +41,8 @@ public abstract class BaseBlockingQueueSubscribableChannelDstu3Test extends Base
 	StandaloneSubscriptionMessageHandler myStandaloneSubscriptionMessageHandler;
 	@Autowired
 	SubscriptionChannelFactory mySubscriptionChannelFactory;
+	@Autowired
+	SubscriptionRegistry mySubscriptionRegistry;
 
 	private static int ourListenerPort;
 	private static RestfulServer ourListenerRestServer;
@@ -44,8 +50,9 @@ public abstract class BaseBlockingQueueSubscribableChannelDstu3Test extends Base
 	protected static String ourListenerServerBase;
 	protected static ObservationListener ourObservationListener;
 	private static SubscribableChannel ourSubscribableChannel;
+	private static AtomicLong ourIdCounter = new AtomicLong(0);
 	private List<IIdType> mySubscriptionIds = Collections.synchronizedList(new ArrayList<>());
-	private long idCounter = 0;
+	private LatchedService myStandaloneSubscriptionMessageHandlerLatch = new LatchedService();
 
 	@After
 	public void afterUnregisterRestHookListener() {
@@ -55,22 +62,32 @@ public abstract class BaseBlockingQueueSubscribableChannelDstu3Test extends Base
 	@Before
 	public void beforeReset() {
 		ourObservationListener.clear();
+		mySubscriptionRegistry.clearForUnitTest();
 		if (ourSubscribableChannel == null) {
-			ourSubscribableChannel = mySubscriptionChannelFactory.newDeliveryChannel("test", Subscription.SubscriptionChannelType.RESTHOOK.toCode().toLowerCase());
+			ourSubscribableChannel = mySubscriptionChannelFactory.newMatchingChannel("test");
 			ourSubscribableChannel.subscribe(myStandaloneSubscriptionMessageHandler);
 		}
+		ExecutorChannelInterceptor interceptor = new ExecutorChannelInterceptor() {
+			@Override
+			public void afterMessageHandled(Message<?> message, MessageChannel channel, MessageHandler handler, Exception ex) {
+				myStandaloneSubscriptionMessageHandlerLatch.countdown();
+			}
+		};
+
+		((LinkedBlockingQueueSubscribableChannel) ourSubscribableChannel).setInterceptorForUnitTest(interceptor);
 	}
 
-	public <T extends IBaseResource> T sendResource(T theResource) {
+	public <T extends IBaseResource> T sendResource(T theResource) throws InterruptedException {
 		ResourceModifiedMessage msg = new ResourceModifiedMessage(myFhirContext, theResource, ResourceModifiedMessage.OperationTypeEnum.CREATE);
 		ResourceModifiedJsonMessage message = new ResourceModifiedJsonMessage(msg);
+		myStandaloneSubscriptionMessageHandlerLatch.setExpectedCount(1);
 		ourSubscribableChannel.send(message);
+		myStandaloneSubscriptionMessageHandlerLatch.awaitExpectedWithTimeout(5);
 		return theResource;
 	}
 
 	protected Subscription createSubscription(String theCriteria, String thePayload, String theEndpoint) throws InterruptedException {
 		Subscription subscription = newSubscription(theCriteria, thePayload, theEndpoint);
-
 		return sendResource(subscription);
 	}
 
@@ -79,8 +96,7 @@ public abstract class BaseBlockingQueueSubscribableChannelDstu3Test extends Base
 		subscription.setReason("Monitor new neonatal function (note, age will be determined by the monitor)");
 		subscription.setStatus(Subscription.SubscriptionStatus.REQUESTED);
 		subscription.setCriteria(theCriteria);
-		++idCounter;
-		IdType id = new IdType("Subscription", idCounter);
+		IdType id = new IdType("Subscription", ourIdCounter.incrementAndGet());
 		subscription.setId(id);
 
 		Subscription.SubscriptionChannelComponent channel = new Subscription.SubscriptionChannelComponent();
@@ -91,10 +107,9 @@ public abstract class BaseBlockingQueueSubscribableChannelDstu3Test extends Base
 		return subscription;
 	}
 
-	protected Observation sendObservation(String code, String system) {
+	protected Observation sendObservation(String code, String system) throws InterruptedException {
 		Observation observation = new Observation();
-		++idCounter;
-		IdType id = new IdType("Observation", idCounter);
+		IdType id = new IdType("Observation", ourIdCounter.incrementAndGet());
 		observation.setId(id);
 
 		CodeableConcept codeableConcept = new CodeableConcept();
@@ -135,6 +150,4 @@ public abstract class BaseBlockingQueueSubscribableChannelDstu3Test extends Base
 	public static void stopListenerServer() throws Exception {
 		ourListenerServer.stop();
 	}
-
-
 }

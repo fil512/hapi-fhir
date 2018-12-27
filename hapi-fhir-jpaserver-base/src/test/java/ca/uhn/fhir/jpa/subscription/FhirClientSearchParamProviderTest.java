@@ -46,38 +46,45 @@ public class FhirClientSearchParamProviderTest extends BaseSubscriptionsR4Test {
 		mySearchParameterDao.create(sp);
 		mySearchParamRegsitry.forceRefresh();
 		createSubscription(criteria, "application/json");
-		waitForActivatedSubscriptionCount(1);
 
 		{
 			Observation observation = new Observation();
 			observation.addExtension().setUrl("Observation#accessType").setValue(new Coding().setCode("Catheter"));
+
+			ourObservationListener.setExpectedCount(1);
+
 			MethodOutcome methodOutcome = ourClient.create().resource(observation).execute();
 			assertEquals(true, methodOutcome.getCreated());
-			waitForQueueToDrain();
-			ourObservationListener.waitForUpdatedSize(1);
+			ourObservationListener.awaitExpected();
 		}
 		{
 			Observation observation = new Observation();
 			observation.addExtension().setUrl("Observation#accessType").setValue(new Coding().setCode("PD Catheter"));
+
+			ourObservationListener.setExpectedCount(1);
+
 			MethodOutcome methodOutcome = ourClient.create().resource(observation).execute();
 			assertEquals(true, methodOutcome.getCreated());
-			waitForQueueToDrain();
-			ourObservationListener.waitForUpdatedSize(2);
+			ourObservationListener.awaitExpected();
 		}
 		{
 			Observation observation = new Observation();
+			mySubscriptionsMatchedLatch.setExpectedCount(1);
 			MethodOutcome methodOutcome = ourClient.create().resource(observation).execute();
+			mySubscriptionsMatchedLatch.awaitExpected();
+			// Should see no subscription notification
+			assertEquals(0, mySubscriptionsMatched);
 			assertEquals(true, methodOutcome.getCreated());
-			waitForQueueToDrain();
-			ourObservationListener.waitForUpdatedSize(2);
 		}
 		{
 			Observation observation = new Observation();
 			observation.addExtension().setUrl("Observation#accessType").setValue(new Coding().setCode("XXX"));
+
+			mySubscriptionsMatchedLatch.setExpectedCount(1);
 			MethodOutcome methodOutcome = ourClient.create().resource(observation).execute();
+			mySubscriptionsMatchedLatch.awaitExpected();
 			assertEquals(true, methodOutcome.getCreated());
-			waitForQueueToDrain();
-			ourObservationListener.waitForUpdatedSize(2);
+			assertEquals(0, mySubscriptionsMatched);
 		}
 	}
 }

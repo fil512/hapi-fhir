@@ -429,7 +429,7 @@ public class RequestValidatingInterceptorDstu3Test {
 		HttpGet httpGet = new HttpGet("http://localhost:" + ourPort + "/metadata");
 
 		// This header caused a crash
-		httpGet.addHeader("Content-Type", "application/xml+fhir");
+		httpGet.addHeader("Content-Type", Constants.CT_FHIR_XML);
 
 		HttpResponse status = ourClient.execute(httpGet);
 

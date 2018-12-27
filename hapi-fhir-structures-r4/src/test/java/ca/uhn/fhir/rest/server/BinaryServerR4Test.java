@@ -174,7 +174,7 @@ public class BinaryServerR4Test {
 		p.getText().setDivAsString("A PATIENT");
 
 		Binary b = new Binary();
-		b.setContentType("application/xml+fhir");
+		b.setContentType(Constants.CT_FHIR_XML);
 		b.setContent(ourCtx.newXmlParser().encodeResourceToString(p).getBytes("UTF-8"));
 		String encoded = ourCtx.newJsonParser().encodeResourceToString(b);
 
@@ -183,7 +183,7 @@ public class BinaryServerR4Test {
 		post.addHeader("Content-Type", Constants.CT_FHIR_JSON);
 		CloseableHttpResponse status = ourClient.execute(post);
 		try {
-			assertEquals("application/xml+fhir", ourLastBinary.getContentType());
+			assertEquals(Constants.CT_FHIR_XML, ourLastBinary.getContentType());
 			assertArrayEquals(b.getContent(), ourLastBinary.getContent());
 			assertEquals(encoded, ourLastBinaryString);
 			assertArrayEquals(encoded.getBytes("UTF-8"), ourLastBinaryBytes);

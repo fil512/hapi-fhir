@@ -6,9 +6,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
@@ -20,7 +17,7 @@ public class SubscriptionMatchingSubscriberTest extends BaseBlockingQueueSubscri
 
 	@Test
 	public void testRestHookSubscriptionApplicationFhirJson() throws Exception {
-		String payload = "application/fhir+json";
+		String payload = Constants.CT_FHIR_JSON_NEW;
 
 		String code = "1000000050";
 		String criteria1 = "Observation?code=SNOMED-CT|" + code + "&_format=xml";
@@ -29,18 +26,18 @@ public class SubscriptionMatchingSubscriberTest extends BaseBlockingQueueSubscri
 		createSubscription(criteria1, payload, ourListenerServerBase);
 		createSubscription(criteria2, payload, ourListenerServerBase);
 
-		CountDownLatch latch = ourObservationListener.newCountDownLatch(1);
+		ourObservationListener.setExpectedCount(1);
 
 		sendObservation(code, "SNOMED-CT");
 
-		assertTrue(latch.await(5L, TimeUnit.SECONDS));
+		ourObservationListener.awaitExpected();
 
 		assertEquals(Constants.CT_FHIR_JSON_NEW, ourObservationListener.getContentType(0));
 	}
 
 	@Test
 	public void testRestHookSubscriptionApplicationXmlJson() throws Exception {
-		String payload = "application/fhir+xml";
+		String payload = Constants.CT_FHIR_XML_NEW;
 
 		String code = "1000000050";
 		String criteria1 = "Observation?code=SNOMED-CT|" + code + "&_format=xml";
@@ -49,11 +46,11 @@ public class SubscriptionMatchingSubscriberTest extends BaseBlockingQueueSubscri
 		createSubscription(criteria1, payload, ourListenerServerBase);
 		createSubscription(criteria2, payload, ourListenerServerBase);
 
-		CountDownLatch latch = ourObservationListener.newCountDownLatch(1);
+		ourObservationListener.setExpectedCount(1);
 
 		sendObservation(code, "SNOMED-CT");
 
-		assertTrue(latch.await(5L, TimeUnit.SECONDS));
+		ourObservationListener.awaitExpected();
 		assertEquals(Constants.CT_FHIR_XML_NEW, ourObservationListener.getContentType(0));
 	}
 
@@ -68,9 +65,8 @@ public class SubscriptionMatchingSubscriberTest extends BaseBlockingQueueSubscri
 		createSubscription(criteria1, payload, ourListenerServerBase);
 		createSubscription(criteria2, payload, ourListenerServerBase);
 
+		ourObservationListener.setExpectedCount(1);
 		sendObservation(code, "SNOMED-CT");
-
-		ourObservationListener.waitForCreatedSize(0);
-		ourObservationListener.waitForUpdatedSize(0);
+		ourObservationListener.expectNothing();
 	}
 }

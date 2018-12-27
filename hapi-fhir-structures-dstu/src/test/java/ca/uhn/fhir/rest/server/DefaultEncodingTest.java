@@ -52,7 +52,7 @@ public class DefaultEncodingTest {
 		assertThat(responseContent, containsString("\"identifier\":"));
 
 		httpGet = new HttpGet("http://localhost:" + ourPort + "/Patient/1");
-		httpGet.addHeader("Accept", "application/json+fhir");
+		httpGet.addHeader("Accept", Constants.CT_FHIR_JSON);
 		status = ourClient.execute(httpGet);
 		responseContent = IOUtils.toString(status.getEntity().getContent());
 		IOUtils.closeQuietly(status.getEntity().getContent());

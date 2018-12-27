@@ -1,5 +1,7 @@
 package org.hl7.fhir.utilities;
 
+import ca.uhn.fhir.rest.api.Constants;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,9 +21,9 @@ public class MimeType {
       else
         params.put(p.substring(0, p.indexOf("=")), p.substring(p.indexOf("=")+1));
     if ("xml".equals(base))
-      base = "application/fhir+xml";
+      base = Constants.CT_FHIR_XML_NEW;
     if ("json".equals(base))
-      base = "application/fhir+json";
+      base = Constants.CT_FHIR_JSON_NEW;
     if ("ttl".equals(base))
       base = "application/fhir+ttl";
   }

@@ -55,6 +55,7 @@ package org.hl7.fhir.convertors;
 import java.util.ArrayList;
 import java.util.List;
 
+import ca.uhn.fhir.rest.api.Constants;
 import org.hl7.fhir.dstu2016may.model.CodeSystem.ConceptDefinitionPropertyComponent;
 import org.hl7.fhir.dstu2016may.model.ImplementationGuide.GuidePageKind;
 import org.hl7.fhir.dstu2016may.model.StructureMap.StructureMapContextType;
@@ -6891,8 +6892,8 @@ public class VersionConvertor_14_40 {
     if (src == null)
       return null;
     switch (src) {
-    case XML: return "application/fhir+xml";
-    case JSON: return "application/fhir+json";
+    case XML: return Constants.CT_FHIR_XML_NEW;
+    case JSON: return Constants.CT_FHIR_JSON_NEW;
     default: return null;
   }
 }
