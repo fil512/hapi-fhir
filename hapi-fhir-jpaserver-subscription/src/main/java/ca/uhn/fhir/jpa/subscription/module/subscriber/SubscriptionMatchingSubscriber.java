@@ -93,7 +93,9 @@ public class SubscriptionMatchingSubscriber implements MessageHandler {
 
 		// FIXME KHS
 		ourLog.info(">>> Setting match count zero");
-		myMatchesCountForUnitTest = new AtomicInteger();
+		if (myMatchedSubscriptionsCallbackForUnitTest.isPresent()) {
+			myMatchesCountForUnitTest = new AtomicInteger();
+		}
 		for (ActiveSubscription nextActiveSubscription : subscriptions) {
 
 			String nextSubscriptionId = nextActiveSubscription.getIdElement(myFhirContext).toUnqualifiedVersionless().getValue();
@@ -129,7 +131,9 @@ public class SubscriptionMatchingSubscriber implements MessageHandler {
 
 			// FIXME KHS
 			ourLog.info(">>> Incrementing");
-			myMatchesCountForUnitTest.incrementAndGet();
+			if (myMatchedSubscriptionsCallbackForUnitTest.isPresent()) {
+				myMatchesCountForUnitTest.incrementAndGet();
+			}
 
 			ourLog.debug("Found match for Subscription {}: queueing rest-hook notification for resource: {}",
 				nextSubscriptionId,
