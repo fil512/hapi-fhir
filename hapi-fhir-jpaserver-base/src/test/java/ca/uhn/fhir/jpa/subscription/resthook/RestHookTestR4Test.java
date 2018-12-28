@@ -160,12 +160,12 @@ public class RestHookTestR4Test extends BaseSubscriptionsR4Test {
 		ourLog.info("** About to send observation");
 		Observation observation = sendObservation(code, "SNOMED-CT");
 		assertEquals("1", observation.getIdElement().getVersionIdPart());
-		assertNull(observation.getComment());
+		assertNull(observation.getNoteFirstRep().getText());
 
-		observation.setComment("changed");
+		observation.getNoteFirstRep().setText("changed");
 		MethodOutcome methodOutcome = ourClient.update().resource(observation).execute();
 		assertEquals("2", methodOutcome.getId().getVersionIdPart());
-		assertEquals("changed", observation.getComment());
+		assertEquals("changed", observation.getNoteFirstRep().getText());
 
 		// Wait for our two delivery channel threads to be paused
 		assertTrue(countDownLatch.await(5L, TimeUnit.SECONDS));
@@ -180,9 +180,9 @@ public class RestHookTestR4Test extends BaseSubscriptionsR4Test {
 		Observation observation2 = (Observation) ourObservationListener.getUpdatedObservation(1);
 
 		assertEquals("1", observation1.getIdElement().getVersionIdPart());
-		assertNull(observation1.getComment());
+		assertNull(observation1.getNoteFirstRep().getText());
 		assertEquals("2", observation2.getIdElement().getVersionIdPart());
-		assertEquals("changed", observation2.getComment());
+		assertEquals("changed", observation2.getNoteFirstRep().getText());
 	}
 
 	@Test
@@ -209,12 +209,12 @@ public class RestHookTestR4Test extends BaseSubscriptionsR4Test {
 		ourLog.info("** About to send observation");
 		Observation observation = sendObservation(code, "SNOMED-CT");
 		assertEquals("1", observation.getIdElement().getVersionIdPart());
-		assertNull(observation.getComment());
+		assertNull(observation.getNoteFirstRep().getText());
 
-		observation.setComment("changed");
+		observation.getNoteFirstRep().setText("changed");
 		MethodOutcome methodOutcome = ourClient.update().resource(observation).execute();
 		assertEquals("2", methodOutcome.getId().getVersionIdPart());
-		assertEquals("changed", observation.getComment());
+		assertEquals("changed", observation.getNoteFirstRep().getText());
 
 		// Wait for our two delivery channel threads to be paused
 		assertTrue(countDownLatch.await(5L, TimeUnit.SECONDS));
@@ -229,9 +229,9 @@ public class RestHookTestR4Test extends BaseSubscriptionsR4Test {
 		Observation observation2 = (Observation) ourObservationListener.getUpdatedObservation(1);
 
 		assertEquals("2", observation1.getIdElement().getVersionIdPart());
-		assertEquals("changed", observation1.getComment());
+		assertEquals("changed", observation1.getNoteFirstRep().getText());
 		assertEquals("2", observation2.getIdElement().getVersionIdPart());
-		assertEquals("changed", observation2.getComment());
+		assertEquals("changed", observation2.getNoteFirstRep().getText());
 	}
 
 	@Test
